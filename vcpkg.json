@@ -5,6 +5,7 @@
     "opengl",
     "openal-soft",
     "glew",
+    "glfw3",
     "glm",
     "libpng",
     "zlib",

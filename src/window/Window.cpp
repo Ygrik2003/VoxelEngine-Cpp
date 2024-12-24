@@ -1,24 +1,23 @@
 #include "Window.hpp"
 
 #include <GL/glew.h>
-#include <GLFW/glfw3.h>
+#include <SDL3/SDL.h>
 
 #include <chrono>
 #include <iostream>
 #include <thread>
 
+#include "Events.hpp"
 #include "debug/Logger.hpp"
 #include "graphics/core/ImageData.hpp"
 #include "graphics/core/Texture.hpp"
 #include "settings.hpp"
 #include "util/ObjectsKeeper.hpp"
-#include "Events.hpp"
-
 #include "util/platform.hpp"
 
 static debug::Logger logger("window");
 
-GLFWwindow* Window::window = nullptr;
+SDL_Window* Window::window = nullptr;
 DisplaySettings* Window::settings = nullptr;
 std::stack<glm::vec4> Window::scissorStack;
 glm::vec4 Window::scissorArea;
@@ -29,48 +28,52 @@ int Window::posY = 0;
 int Window::framerate = -1;
 double Window::prevSwap = 0.0;
 bool Window::fullscreen = false;
+bool Window::to_quit = true;
 
 static util::ObjectsKeeper observers_keeper;
 
-void cursor_position_callback(GLFWwindow*, double xpos, double ypos) {
+void cursor_position_callback(SDL_Window*, double xpos, double ypos) {
     Events::setPosition(xpos, ypos);
 }
 
-void mouse_button_callback(GLFWwindow*, int button, int action, int) {
-    Events::setButton(button, action == GLFW_PRESS);
+void mouse_button_callback(SDL_Window*, int button, int action, int) {
+    Events::setButton(button, action == SDL_EVENT_MOUSE_BUTTON_DOWN);
 }
 
-void key_callback(
-    GLFWwindow*, int key, int /*scancode*/, int action, int /*mode*/
-) {
-    if (key == GLFW_KEY_UNKNOWN) return;
-    if (action == GLFW_PRESS) {
-        Events::setKey(key, true);
-        Events::pressedKeys.push_back(static_cast<keycode>(key));
-    } else if (action == GLFW_RELEASE) {
-        Events::setKey(key, false);
-    } else if (action == GLFW_REPEAT) {
-        Events::pressedKeys.push_back(static_cast<keycode>(key));
-    }
-}
+// SDL_AppResult process_event(SDL_Event* event) {
+//     switch (event->type) {
+//         case SDL_EVENT_QUIT:
+//             // Window::to_quit = true;
+//             break;
+//         case SDL_EVENT_KEY_DOWN:
+//             Events::setKey(event->key.key, false);
+//             break;
+//         case SDL_EVENT_KEY_UP:
+//             Events::setKey(event->key.key, true);
+//             Events::pressedKeys.push_back(static_cast<keycode>(event->key.key));
+//             break;
+//         case SDL_EVENT_WINDOW_RESIZED:
+//             break;
+//     }
+// }
 
-void scroll_callback(GLFWwindow*, double xoffset, double yoffset) {
+void scroll_callback(SDL_Window*, double xoffset, double yoffset) {
     Events::scroll += yoffset;
 }
 
 bool Window::isMaximized() {
-    return glfwGetWindowAttrib(window, GLFW_MAXIMIZED);
+    return SDL_GetWindowFlags(window) & SDL_WINDOW_MAXIMIZED;
 }
 
 bool Window::isIconified() {
-    return glfwGetWindowAttrib(window, GLFW_ICONIFIED);
+    return SDL_GetWindowFlags(window) & SDL_WINDOW_MINIMIZED;
 }
 
 bool Window::isFocused() {
-    return glfwGetWindowAttrib(window, GLFW_FOCUSED);
+    return SDL_GetWindowFlags(window) & SDL_WINDOW_INPUT_FOCUS;
 }
 
-void window_size_callback(GLFWwindow*, int width, int height) {
+void window_size_callback(SDL_Window*, int width, int height) {
     if (width && height) {
         glViewport(0, 0, width, height);
         Window::width = width;
@@ -84,45 +87,45 @@ void window_size_callback(GLFWwindow*, int width, int height) {
     Window::resetScissor();
 }
 
-void character_callback(GLFWwindow*, unsigned int codepoint) {
+void character_callback(SDL_Window*, unsigned int codepoint) {
     Events::codepoints.push_back(codepoint);
 }
 
 const char* glfwErrorName(int error) {
-    switch (error) {
-        case GLFW_NO_ERROR:
-            return "no error";
-        case GLFW_NOT_INITIALIZED:
-            return "not initialized";
-        case GLFW_NO_CURRENT_CONTEXT:
-            return "no current context";
-        case GLFW_INVALID_ENUM:
-            return "invalid enum";
-        case GLFW_INVALID_VALUE:
-            return "invalid value";
-        case GLFW_OUT_OF_MEMORY:
-            return "out of memory";
-        case GLFW_API_UNAVAILABLE:
-            return "api unavailable";
-        case GLFW_VERSION_UNAVAILABLE:
-            return "version unavailable";
-        case GLFW_PLATFORM_ERROR:
-            return "platform error";
-        case GLFW_FORMAT_UNAVAILABLE:
-            return "format unavailable";
-        case GLFW_NO_WINDOW_CONTEXT:
-            return "no window context";
-        default:
-            return "unknown error";
-    }
+    // switch (error) {
+    //     case GLFW_NO_ERROR:
+    //         return "no error";
+    //     case GLFW_NOT_INITIALIZED:
+    //         return "not initialized";
+    //     case GLFW_NO_CURRENT_CONTEXT:
+    //         return "no current context";
+    //     case GLFW_INVALID_ENUM:
+    //         return "invalid enum";
+    //     case GLFW_INVALID_VALUE:
+    //         return "invalid value";
+    //     case GLFW_OUT_OF_MEMORY:
+    //         return "out of memory";
+    //     case GLFW_API_UNAVAILABLE:
+    //         return "api unavailable";
+    //     case GLFW_VERSION_UNAVAILABLE:
+    //         return "version unavailable";
+    //     case GLFW_PLATFORM_ERROR:
+    //         return "platform error";
+    //     case GLFW_FORMAT_UNAVAILABLE:
+    //         return "format unavailable";
+    //     case GLFW_NO_WINDOW_CONTEXT:
+    //         return "no window context";
+    //     default:
+    return "unknown error";
+    // }
 }
 
 void error_callback(int error, const char* description) {
-    std::cerr << "GLFW error [0x" << std::hex << error << "]: ";
-    std::cerr << glfwErrorName(error) << std::endl;
-    if (description) {
-        std::cerr << description << std::endl;
-    }
+    // std::cerr << "GLFW error [0x" << std::hex << error << "]: ";
+    // std::cerr << glfwErrorName(error) << std::endl;
+    // if (description) {
+    //     std::cerr << description << std::endl;
+    // }
 }
 
 int Window::initialize(DisplaySettings* settings) {
@@ -130,53 +133,35 @@ int Window::initialize(DisplaySettings* settings) {
     Window::width = settings->width.get();
     Window::height = settings->height.get();
 
-    std::string title = "VoxelCore v" +
-                        std::to_string(ENGINE_VERSION_MAJOR) + "." +
-                        std::to_string(ENGINE_VERSION_MINOR);
+    std::string title = "VoxelCore v" + std::to_string(ENGINE_VERSION_MAJOR) +
+                        "." + std::to_string(ENGINE_VERSION_MINOR);
     if (ENGINE_DEBUG_BUILD) {
         title += " [debug]";
     }
 
-    glfwSetErrorCallback(error_callback);
-    if (glfwInit() == GLFW_FALSE) {
-        logger.error() << "failed to initialize GLFW";
-        return -1;
-    }
-
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 #ifdef __APPLE__
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_FALSE);
+    SDL_GL_SetAttribute(
+        SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE
+    );
 #else
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_ANY_PROFILE);
+    SDL_GL_SetAttribute(
+        SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY
+    );
 #endif
-    glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
-    glfwWindowHint(GLFW_SAMPLES, settings->samples.get());
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, settings->samples.get());
 
-    window = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
-    if (window == nullptr) {
-        logger.error() << "failed to create GLFW window";
-        glfwTerminate();
+    window = SDL_CreateWindow(
+        title.c_str(), width, height, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE
+    );
+    if (!window) {
+        logger.error() << "failed to create SDL window";
+        SDL_Quit();
         return -1;
     }
-    glfwMakeContextCurrent(window);
-
-    glewExperimental = GL_TRUE;
-
-    GLenum glewErr = glewInit();
-    if (glewErr != GLEW_OK) {
-        if (glewErr == GLEW_ERROR_NO_GLX_DISPLAY) {
-            // see issue #240
-            logger.warning()
-                << "glewInit() returned GLEW_ERROR_NO_GLX_DISPLAY; ignored";
-        } else {
-            logger.error() << "failed to initialize GLEW:\n"
-                           << glewGetErrorString(glewErr);
-            return -1;
-        }
-    }
+    SDL_GLContext context = SDL_GL_CreateContext(window);
+    SDL_GL_MakeCurrent(window, context);
 
     glViewport(0, 0, width, height);
     glClearColor(0.0f, 0.0f, 0.0f, 1);
@@ -190,13 +175,6 @@ int Window::initialize(DisplaySettings* settings) {
         logger.info() << "max texture size is " << Texture::MAX_RESOLUTION;
     }
 
-    glfwSetKeyCallback(window, key_callback);
-    glfwSetMouseButtonCallback(window, mouse_button_callback);
-    glfwSetCursorPosCallback(window, cursor_position_callback);
-    glfwSetWindowSizeCallback(window, window_size_callback);
-    glfwSetCharCallback(window, character_callback);
-    glfwSetScrollCallback(window, scroll_callback);
-
     observers_keeper = util::ObjectsKeeper();
     observers_keeper.keepAlive(settings->fullscreen.observe(
         [](bool value) {
@@ -207,15 +185,15 @@ int Window::initialize(DisplaySettings* settings) {
         true
     ));
 
-    glfwSwapInterval(1);
+    SDL_GL_SetSwapInterval(1);  // VSync
     setFramerate(settings->framerate.get());
     const GLubyte* vendor = glGetString(GL_VENDOR);
     const GLubyte* renderer = glGetString(GL_RENDERER);
     logger.info() << "GL Vendor: " << reinterpret_cast<const char*>(vendor);
     logger.info() << "GL Renderer: " << reinterpret_cast<const char*>(renderer);
-    logger.info() << "GLFW: " << glfwGetVersionString();
+    logger.info() << "SDL: " << SDL_GetVersion();
     glm::vec2 scale;
-    glfwGetMonitorContentScale(glfwGetPrimaryMonitor(), &scale.x, &scale.y);
+    scale.x = scale.y = SDL_GetWindowDisplayScale(window);
     logger.info() << "monitor content scale: " << scale.x << "x" << scale.y;
 
     input_util::initialize();
@@ -242,8 +220,8 @@ void Window::viewport(int x, int y, int width, int height) {
     glViewport(x, y, width, height);
 }
 
-void Window::setCursorMode(int mode) {
-    glfwSetInputMode(window, GLFW_CURSOR, mode);
+void Window::setRelativeMouseMode(bool mode) {
+    SDL_CaptureMouse(mode);
 }
 
 void Window::resetScissor() {
@@ -305,20 +283,20 @@ void Window::popScissor() {
 
 void Window::terminate() {
     observers_keeper = util::ObjectsKeeper();
-    glfwTerminate();
+    SDL_Quit();
 }
 
 bool Window::isShouldClose() {
-    return glfwWindowShouldClose(window);
+    return to_quit;
 }
 
 void Window::setShouldClose(bool flag) {
-    glfwSetWindowShouldClose(window, flag);
+    // glfwSetWindowShouldClose(window, flag);
 }
 
 void Window::setFramerate(int framerate) {
     if ((framerate != -1) != (Window::framerate != -1)) {
-        glfwSwapInterval(framerate == -1);
+        SDL_GL_SetSwapInterval(framerate == -1);
     }
     Window::framerate = framerate;
 }
@@ -326,30 +304,30 @@ void Window::setFramerate(int framerate) {
 void Window::toggleFullscreen() {
     fullscreen = !fullscreen;
 
-    GLFWmonitor* monitor = glfwGetPrimaryMonitor();
-    const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+    SDL_DisplayID monitor = SDL_GetPrimaryDisplay();
+    const SDL_DisplayMode* mode = SDL_GetCurrentDisplayMode(monitor);
 
     if (Events::_cursor_locked) Events::toggleCursor();
 
     if (fullscreen) {
-        glfwGetWindowPos(window, &posX, &posY);
-        glfwSetWindowMonitor(
-            window, monitor, 0, 0, mode->width, mode->height, GLFW_DONT_CARE
-        );
+        // glfwGetWindowPos(window, &posX, &posY);
+        // glfwSetWindowMonitor(
+        //     window, monitor, 0, 0, mode->width, mode->height, GLFW_DONT_CARE
+        // );
     } else {
-        glfwSetWindowMonitor(
-            window,
-            nullptr,
-            posX,
-            posY,
-            settings->width.get(),
-            settings->height.get(),
-            GLFW_DONT_CARE
-        );
+        // glfwSetWindowMonitor(
+        //     window,
+        //     nullptr,
+        //     posX,
+        //     posY,
+        //     settings->width.get(),
+        //     settings->height.get(),
+        //     GLFW_DONT_CARE
+        // );
     }
 
-    double xPos, yPos;
-    glfwGetCursorPos(window, &xPos, &yPos);
+    float xPos, yPos;
+    SDL_WarpMouseInWindow(window, xPos, yPos);
     Events::setPosition(xPos, yPos);
 }
 
@@ -358,7 +336,7 @@ bool Window::isFullscreen() {
 }
 
 void Window::swapBuffers() {
-    glfwSwapBuffers(window);
+    SDL_GL_SwapWindow(window);
     Window::resetScissor();
     if (framerate > 0) {
         auto elapsedTime = time() - prevSwap;
@@ -372,8 +350,14 @@ void Window::swapBuffers() {
     prevSwap = time();
 }
 
+/// @return Current time in seconds
 double Window::time() {
-    return glfwGetTime();
+    SDL_Time ticks;
+    if (!SDL_GetCurrentTime(&ticks)) {
+        logger.error() << "SDL error when getting current time: "
+                       << SDL_GetError();
+    }
+    return reinterpret_cast<int64_t>(ticks) * 1e-9;
 }
 
 DisplaySettings* Window::getSettings() {
@@ -390,43 +374,60 @@ std::unique_ptr<ImageData> Window::takeScreenshot() {
 }
 
 const char* Window::getClipboardText() {
-    return glfwGetClipboardString(window);
+    return SDL_GetClipboardText();
 }
 
 void Window::setClipboardText(const char* text) {
-    glfwSetClipboardString(window, text);
+    SDL_SetClipboardText(text);
 }
 
-bool Window::tryToMaximize(GLFWwindow* window, GLFWmonitor* monitor) {
+bool Window::tryToMaximize(SDL_Window* window, SDL_DisplayID monitor) {
     glm::ivec4 windowFrame(0);
     glm::ivec4 workArea(0);
-    glfwGetWindowFrameSize(
-        window, &windowFrame.x, &windowFrame.y, &windowFrame.z, &windowFrame.w
-    );
-    glfwGetMonitorWorkarea(
-        monitor, &workArea.x, &workArea.y, &workArea.z, &workArea.w
-    );
+
+    SDL_GetWindowSize(window, &windowFrame.z, &windowFrame.w);
+    SDL_GetWindowPosition(window, &windowFrame.x, &windowFrame.y);
+
+    const SDL_DisplayMode* displayMode = SDL_GetCurrentDisplayMode(monitor);
+    workArea.z = displayMode->w;
+    workArea.w = displayMode->h;
+
     if (Window::width > (uint)workArea.z) Window::width = (uint)workArea.z;
     if (Window::height > (uint)workArea.w) Window::height = (uint)workArea.w;
     if (Window::width >= (uint)(workArea.z - (windowFrame.x + windowFrame.z)) &&
         Window::height >=
             (uint)(workArea.w - (windowFrame.y + windowFrame.w))) {
-        glfwMaximizeWindow(window);
+        SDL_MaximizeWindow(window);
         return true;
     }
-    glfwSetWindowSize(window, Window::width, Window::height);
-    glfwSetWindowPos(
+    SDL_SetWindowSize(window, Window::width, Window::height);
+    SDL_SetWindowPosition(
         window,
-        workArea.x + (workArea.z - Window::width) / 2,
-        workArea.y + (workArea.w - Window::height) / 2 + windowFrame.y / 2
+        (workArea.z - Window::width) / 2,
+        (workArea.w - Window::height) / 2 + windowFrame.y / 2
     );
     return false;
 }
 
 void Window::setIcon(const ImageData* image) {
-    GLFWimage icon {
+    SDL_PixelFormat currPixelFormat;
+    switch (image->getFormat()) {
+        case ImageFormat::rgb888:
+            currPixelFormat = SDL_PixelFormat::SDL_PIXELFORMAT_RGB24;
+            break;
+        case ImageFormat::rgba8888:
+            currPixelFormat = SDL_PixelFormat::SDL_PIXELFORMAT_RGBA8888;
+            break;
+    }
+    SDL_Surface* icon = SDL_CreateSurface(
         static_cast<int>(image->getWidth()),
         static_cast<int>(image->getHeight()),
-        image->getData()};
-    glfwSetWindowIcon(window, 1, &icon);
+        currPixelFormat
+    );
+    icon->pixels = static_cast<void*>(image->getData());
+
+    if (!SDL_SetWindowIcon(window, icon)) {
+        logger.error() << "SDL cant set icon for app with next error: "
+                       << SDL_GetError();
+    }
 }

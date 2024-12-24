@@ -1,12 +1,12 @@
 #include "Events.hpp"
 
 #include <GL/glew.h>
-#include <GLFW/glfw3.h>
+#include <SDL3/SDL.h>
 #include <string.h>
 
+#include "Window.hpp"
 #include "debug/Logger.hpp"
 #include "util/stringutil.hpp"
-#include "Window.hpp"
 
 static debug::Logger logger("events");
 
@@ -62,9 +62,7 @@ bool Events::jclicked(int button) {
 void Events::toggleCursor() {
     cursor_drag = false;
     _cursor_locked = !_cursor_locked;
-    Window::setCursorMode(
-        _cursor_locked ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL
-    );
+    Window::setRelativeMouseMode(_cursor_locked);
 }
 
 void Events::pollEvents() {
@@ -74,7 +72,9 @@ void Events::pollEvents() {
     scroll = 0;
     codepoints.clear();
     pressedKeys.clear();
-    glfwPollEvents();
+
+    SDL_Event event;
+    SDL_PollEvent(&event);  // TODO: Implement
 
     for (auto& entry : bindings) {
         auto& binding = entry.second;
@@ -201,8 +201,7 @@ std::string Events::writeBindings() {
 }
 
 void Events::loadBindings(
-    const std::string& filename, const std::string& source,
-    BindType bindType
+    const std::string& filename, const std::string& source, BindType bindType
 ) {
     auto map = toml::parse(filename, source);
     for (auto& [sectionName, section] : map.asObject()) {
@@ -218,9 +217,8 @@ void Events::loadBindings(
                 type = inputtype::mouse;
                 code = static_cast<int>(input_util::mousecode_from(codename));
             } else {
-                logger.error()
-                    << "unknown input type: " << prefix << " (binding "
-                    << util::quote(key) << ")";
+                logger.error() << "unknown input type: " << prefix
+                               << " (binding " << util::quote(key) << ")";
                 continue;
             }
             if (bindType == BindType::BIND) {
@@ -228,7 +226,6 @@ void Events::loadBindings(
             } else if (bindType == BindType::REBIND) {
                 Events::rebind(key, type, code);
             }
-            
         }
     }
 }

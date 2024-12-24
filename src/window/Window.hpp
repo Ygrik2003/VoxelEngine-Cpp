@@ -1,5 +1,7 @@
 #pragma once
 
+#include <SDL3/SDL.h>
+
 #include <glm/glm.hpp>
 #include <memory>
 #include <stack>
@@ -13,15 +15,16 @@ struct GLFWwindow;
 struct GLFWmonitor;
 
 class Window {
-    static GLFWwindow* window;
+    static SDL_Window* window;
     static DisplaySettings* settings;
     static std::stack<glm::vec4> scissorStack;
     static glm::vec4 scissorArea;
     static bool fullscreen;
+    static bool to_quit;
     static int framerate;
     static double prevSwap;
 
-    static bool tryToMaximize(GLFWwindow* window, GLFWmonitor* monitor);
+    static bool tryToMaximize(SDL_Window* window, SDL_DisplayID monitor);
 public:
     static int posX;
     static int posY;
@@ -31,7 +34,7 @@ public:
     static void terminate();
 
     static void viewport(int x, int y, int width, int height);
-    static void setCursorMode(int mode);
+    static void setRelativeMouseMode(bool mode);
     static bool isShouldClose();
     static void setShouldClose(bool flag);
     static void swapBuffers();
