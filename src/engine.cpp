@@ -1,6 +1,8 @@
 #include "engine.hpp"
 
+#ifndef GLEW_STATIC
 #define GLEW_STATIC
+#endif
 
 #include "debug/Logger.hpp"
 #include "assets/AssetsLoader.hpp"
@@ -83,6 +85,9 @@ Engine::Engine(CoreParameters coreParameters)
     paths.setResourcesFolder(params.resFolder);
     paths.setUserFilesFolder(params.userFolder);
     paths.prepare();
+    if (!params.scriptFile.empty()) {
+        paths.setScriptFolder(params.scriptFile.parent_path());
+    }
     loadSettings();
 
     auto resdir = paths.getResourcesFolder();
