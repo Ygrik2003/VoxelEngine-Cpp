@@ -257,6 +257,8 @@ void Engine::nextFrame() {
     );
     window->swapBuffers();
     input->pollEvents();
+
+    VOXELENGINE_PROFILE_GPU_COLLECT
 }
 
 void Engine::renderFrame() {
