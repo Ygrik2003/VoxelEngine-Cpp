@@ -1,9 +1,10 @@
 project(VoxelEngineSrc)
 
+file(GLOB_RECURSE headers ${CMAKE_CURRENT_SOURCE_DIR}/*.hpp)
 file(GLOB_RECURSE sources ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 list(REMOVE_ITEM sources ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
 
-add_library(VoxelEngineSrc STATIC ${sources})
+add_library(VoxelEngineSrc STATIC ${sources} ${headers})
 
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
