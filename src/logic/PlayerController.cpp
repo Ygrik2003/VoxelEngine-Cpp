@@ -8,7 +8,6 @@
 #include "content/Content.hpp"
 #include "core_defs.hpp"
 #include "engine/Engine.hpp"
-#include "engine/Profiler.hpp"
 #include "items/Inventory.hpp"
 #include "items/ItemDef.hpp"
 #include "items/ItemStack.hpp"
@@ -137,7 +136,7 @@ void CameraControl::updateFov(
         if (crouch) {
             offset += glm::vec3(0.f, CROUCH_SHIFT_Y, 0.f);
             zoomValue = CROUCH_ZOOM;
-        } else if (input.sprint && (input.moveForward || input.moveBack ||
+        } else if (input.sprint && (input.moveForward || input.moveBack || 
                                     input.moveLeft || input.moveRight)) {
             zoomValue = RUN_ZOOM;
         }
@@ -150,13 +149,14 @@ void CameraControl::updateFov(
 // more extensible but uglier
 void CameraControl::switchCamera() {
     const std::vector<std::shared_ptr<Camera>> playerCameras {
-        camera, player.tpCamera, player.spCamera
-    };
+        camera, player.tpCamera, player.spCamera};
 
     auto index = std::distance(
         playerCameras.begin(),
         std::find_if(
-            playerCameras.begin(), playerCameras.end(), [this](auto& ptr) {
+            playerCameras.begin(),
+            playerCameras.end(),
+            [this](auto& ptr) {
                 return ptr.get() == player.currentCamera.get();
             }
         )
@@ -264,8 +264,6 @@ void PlayerController::updateFootsteps(float delta) {
 }
 
 void PlayerController::update(float delta, const Input* inputEvents) {
-    VOXELENGINE_PROFILE;
-
     if (inputEvents) {
         updateKeyboard(*inputEvents);
         player.updateSelectedEntity();
@@ -278,8 +276,6 @@ void PlayerController::update(float delta, const Input* inputEvents) {
 void PlayerController::postUpdate(
     float delta, int windowHeight, const Input* input, bool pause
 ) {
-    VOXELENGINE_PROFILE;
-
     if (!pause) {
         updateFootsteps(delta);
     }
@@ -342,8 +338,7 @@ static int determine_rotation(
             if (norm.z > 0.0f) return BLOCK_DIR_NORTH;
             if (norm.z < 0.0f) return BLOCK_DIR_SOUTH;
         } else if (name == "pane" || name == "stairs") {
-            int verticalBit =
-                (name == "stairs" && (norm.y - camDir.y * 0.5f) < 0.0) ? 4 : 0;
+            int verticalBit = (name == "stairs" && (norm.y - camDir.y * 0.5f) < 0.0) ? 4 : 0; 
             if (abs(camDir.x) > abs(camDir.z)) {
                 if (camDir.x > 0.0f) return BLOCK_DIR_EAST | verticalBit;
                 if (camDir.x < 0.0f) return BLOCK_DIR_WEST | verticalBit;
@@ -448,8 +443,7 @@ void PlayerController::processRightClick(
     if (def.obstacle) {
         const auto& hitboxes = def.rt.hitboxes[state.rotation];
         for (const AABB& blockAABB : hitboxes) {
-            if (level.entities->hasBlockingInside(
-                    blockAABB.translated(coord)
+            if (level.entities->hasBlockingInside(blockAABB.translated(coord)
                 )) {
                 return;
             }
@@ -497,9 +491,7 @@ void PlayerController::updateEntityInteraction(
     }
 }
 
-void PlayerController::updateInteraction(
-    const Input& inputEvents, float delta
-) {
+void PlayerController::updateInteraction(const Input& inputEvents, float delta) {
     auto indices = level.content.getIndices();
     const auto& selection = player.selection;
 

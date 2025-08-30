@@ -4,13 +4,12 @@
 #include <stdexcept>
 #include <utility>
 
-#include "AL/ALAudio.hpp"
+#include "io/io.hpp"
 #include "coders/ogg.hpp"
 #include "coders/wav.hpp"
-#include "debug/Logger.hpp"
-#include "engine/Profiler.hpp"
-#include "io/io.hpp"
+#include "AL/ALAudio.hpp"
 #include "NoAudio.hpp"
+#include "debug/Logger.hpp"
 #include "util/ObjectsKeeper.hpp"
 
 static debug::Logger logger("audio");
@@ -408,7 +407,6 @@ size_t audio::count_streams() {
 }
 
 void audio::update(double delta) {
-    VOXELENGINE_PROFILE;
     backend->update(delta);
 
     for (auto& entry : streams) {

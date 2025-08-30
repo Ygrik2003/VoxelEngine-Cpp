@@ -1,48 +1,50 @@
 #include "Engine.hpp"
 
-#include <assert.h>
+#ifndef GLEW_STATIC
+#define GLEW_STATIC
+#endif
 
-#include <functional>
-#include <glm/glm.hpp>
-#include <iostream>
-#include <unordered_set>
-#include <utility>
-
-#include "Mainloop.hpp"
-#include "ServerMainloop.hpp"
+#include "debug/Logger.hpp"
 #include "assets/AssetsLoader.hpp"
 #include "audio/audio.hpp"
 #include "coders/GLSLExtension.hpp"
-#include "coders/commons.hpp"
 #include "coders/imageio.hpp"
 #include "coders/json.hpp"
 #include "coders/toml.hpp"
-#include "content/ContentControl.hpp"
-#include "core_defs.hpp"
-#include "debug/Logger.hpp"
+#include "coders/commons.hpp"
 #include "devtools/Editor.hpp"
 #include "devtools/Project.hpp"
-#include "engine/Profiler.hpp"
-#include "engine/ProfilerGpu.hpp"
+#include "content/ContentControl.hpp"
+#include "core_defs.hpp"
+#include "io/io.hpp"
 #include "frontend/locale.hpp"
 #include "frontend/menu.hpp"
 #include "frontend/screens/Screen.hpp"
+#include "graphics/render/ModelsGenerator.hpp"
 #include "graphics/core/DrawContext.hpp"
 #include "graphics/core/ImageData.hpp"
 #include "graphics/core/Shader.hpp"
-#include "graphics/render/ModelsGenerator.hpp"
 #include "graphics/ui/GUI.hpp"
-#include "io/io.hpp"
-#include "logic/CommandsInterpreter.hpp"
+#include "objects/rigging.hpp"
 #include "logic/EngineController.hpp"
+#include "logic/CommandsInterpreter.hpp"
 #include "logic/scripting/scripting.hpp"
 #include "logic/scripting/scripting_hud.hpp"
 #include "network/Network.hpp"
 #include "util/platform.hpp"
 #include "window/Camera.hpp"
-#include "window/Window.hpp"
 #include "window/input.hpp"
+#include "window/Window.hpp"
 #include "world/Level.hpp"
+#include "Mainloop.hpp"
+#include "ServerMainloop.hpp"
+
+#include <iostream>
+#include <assert.h>
+#include <glm/glm.hpp>
+#include <unordered_set>
+#include <functional>
+#include <utility>
 
 static debug::Logger logger("engine");
 
@@ -100,14 +102,15 @@ void Engine::initialize(CoreParameters coreParameters) {
     if (!params.headless) {
         std::string title = project->title;
         if (title.empty()) {
-            title = "VoxelCore v" + std::to_string(ENGINE_VERSION_MAJOR) + "." +
-                    std::to_string(ENGINE_VERSION_MINOR);
+            title = "VoxelCore v" +
+                            std::to_string(ENGINE_VERSION_MAJOR) + "." +
+                            std::to_string(ENGINE_VERSION_MINOR);
         }
         if (ENGINE_DEBUG_BUILD) {
             title += " [debug]";
         }
         auto [window, input] = Window::initialize(&settings.display, title);
-        if (!window || !input) {
+        if (!window || !input){
             throw initialize_error("could not initialize window");
         }
         window->setFramerate(settings.display.framerate.get());
@@ -143,36 +146,32 @@ void Engine::initialize(CoreParameters coreParameters) {
             langs::locale_by_envlocale(platform::detect_locale())
         );
     }
-    content =
-        std::make_unique<ContentControl>(*project, paths, *input, [this]() {
-            editor->loadTools();
-            langs::setup(langs::get_current(), paths.resPaths.collectRoots());
-            if (!isHeadless()) {
-                for (auto& pack : content->getAllContentPacks()) {
-                    auto configFolder = pack.folder / "config";
-                    auto bindsFile = configFolder / "bindings.toml";
-                    if (io::is_regular_file(bindsFile)) {
-                        input->getBindings().read(
-                            toml::parse(
-                                bindsFile.string(), io::read_string(bindsFile)
-                            ),
-                            BindType::BIND
-                        );
-                    }
+    content = std::make_unique<ContentControl>(*project, paths, *input, [this]() {
+        editor->loadTools();
+        langs::setup(langs::get_current(), paths.resPaths.collectRoots());
+        if (!isHeadless()) {
+            for (auto& pack : content->getAllContentPacks()) {
+                auto configFolder = pack.folder / "config";
+                auto bindsFile = configFolder / "bindings.toml";
+                if (io::is_regular_file(bindsFile)) {
+                    input->getBindings().read(
+                        toml::parse(
+                            bindsFile.string(), io::read_string(bindsFile)
+                        ),
+                        BindType::BIND
+                    );
                 }
-                loadAssets();
             }
-        });
+            loadAssets();
+        }
+    });
     scripting::initialize(this);
     if (!isHeadless()) {
         gui->setPageLoader(scripting::create_page_loader());
     }
-    keepAlive(settings.ui.language.observe(
-        [this](auto lang) {
-            langs::setup(lang, paths.resPaths.collectRoots());
-        },
-        true
-    ));
+    keepAlive(settings.ui.language.observe([this](auto lang) {
+        langs::setup(lang, paths.resPaths.collectRoots());
+    }, true));
 }
 
 void Engine::loadSettings() {
@@ -230,14 +229,12 @@ void Engine::run() {
 }
 
 void Engine::postUpdate() {
-    VOXELENGINE_PROFILE;
     network->update();
     postRunnables.run();
     scripting::process_post_runnables();
 }
 
 void Engine::updateFrontend() {
-    VOXELENGINE_PROFILE;
     double delta = time.getDelta();
     updateHotkeys();
     audio::update(delta);
@@ -247,9 +244,6 @@ void Engine::updateFrontend() {
 }
 
 void Engine::nextFrame() {
-    VOXELENGINE_PROFILE;
-    VOXELENGINE_PROFILE_GPU("Engine::nextFrame");
-
     window->setFramerate(
         window->isIconified() && settings.display.limitFpsIconified.get()
             ? 20
@@ -257,14 +251,9 @@ void Engine::nextFrame() {
     );
     window->swapBuffers();
     input->pollEvents();
-
-    VOXELENGINE_PROFILE_GPU_COLLECT
 }
 
 void Engine::renderFrame() {
-    VOXELENGINE_PROFILE;
-    VOXELENGINE_PROFILE_GPU("Engine::renderFrame");
-
     screen->draw(time.getDelta());
 
     DrawContext ctx(nullptr, *window, nullptr);
@@ -273,14 +262,10 @@ void Engine::renderFrame() {
 
 void Engine::saveSettings() {
     logger.info() << "saving settings";
-    io::write_string(
-        EnginePaths::SETTINGS_FILE, toml::stringify(*settingsHandler)
-    );
+    io::write_string(EnginePaths::SETTINGS_FILE, toml::stringify(*settingsHandler));
     if (!params.headless) {
         logger.info() << "saving bindings";
-        io::write_string(
-            EnginePaths::CONTROLS_FILE, input->getBindings().write()
-        );
+        io::write_string(EnginePaths::CONTROLS_FILE, input->getBindings().write());
     }
 }
 
@@ -335,9 +320,9 @@ void Engine::loadAssets() {
 
     // no need
     // correct log messages order is more useful
-    bool threading = false;  // look at two upper lines
+    bool threading = false; // look at two upper lines
     if (threading) {
-        auto task = loader.startTask([=]() {});
+        auto task = loader.startTask([=](){});
         task->waitForEnd();
     } else {
         while (loader.hasNext()) {

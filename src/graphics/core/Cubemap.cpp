@@ -1,14 +1,11 @@
 #include "Cubemap.hpp"
+#include "gl_util.hpp"
 
 #include <GL/glew.h>
 
-#include "engine/ProfilerGpu.hpp"
-#include "gl_util.hpp"
-
-Cubemap::Cubemap(uint width, uint height, ImageFormat imageFormat)
-    : Texture(0, width, height) {
-    VOXELENGINE_PROFILE_GPU("Cubemap::Cubemap");
-
+Cubemap::Cubemap(uint width, uint height, ImageFormat imageFormat) 
+  : Texture(0, width, height) 
+{
     glGenTextures(1, &id);
     glBindTexture(GL_TEXTURE_CUBE_MAP, id);
     glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -20,25 +17,23 @@ Cubemap::Cubemap(uint width, uint height, ImageFormat imageFormat)
     uint format = gl::to_glenum(imageFormat);
     for (uint face = 0; face < 6; face++) {
         glTexImage2D(
-            GL_TEXTURE_CUBE_MAP_POSITIVE_X + face,
-            0,
-            format,
-            width,
-            height,
-            0,
-            format,
-            GL_UNSIGNED_BYTE,
+            GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 
+            0, 
+            format, 
+            width, 
+            height, 
+            0, 
+            format, 
+            GL_UNSIGNED_BYTE, 
             NULL
         );
     }
 }
 
 void Cubemap::bind() const {
-    VOXELENGINE_PROFILE_GPU("Cubemap::bind");
     glBindTexture(GL_TEXTURE_CUBE_MAP, id);
 }
 
 void Cubemap::unbind() const {
-    VOXELENGINE_PROFILE_GPU("Cubemap::unbind");
     glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 }

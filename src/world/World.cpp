@@ -8,9 +8,8 @@
 #include "content/Content.hpp"
 #include "content/ContentReport.hpp"
 #include "debug/Logger.hpp"
-#include "engine/Profiler.hpp"
+#include "world/files/WorldFiles.hpp"
 #include "items/Inventories.hpp"
-#include "Level.hpp"
 #include "objects/Entities.hpp"
 #include "objects/Player.hpp"
 #include "objects/Players.hpp"
@@ -18,9 +17,9 @@
 #include "voxels/Chunk.hpp"
 #include "voxels/Chunks.hpp"
 #include "voxels/GlobalChunks.hpp"
-#include "world/files/WorldFiles.hpp"
-#include "world/generator/GeneratorDef.hpp"
 #include "world/generator/WorldGenerator.hpp"
+#include "world/generator/GeneratorDef.hpp"
+#include "Level.hpp"
 
 static debug::Logger logger("world");
 const float DAYIME_SPECIFIC_SPEED = 1.0f / 1440.0f;  // 1.0f/60.0f/24.0f;
@@ -34,18 +33,15 @@ World::World(
     const std::shared_ptr<WorldFiles>& worldFiles,
     const Content& content,
     const std::vector<ContentPack>& packs
-)
-    : info(std::move(info)),
-      content(content),
-      packs(packs),
-      wfile(std::move(worldFiles)) {
-}
+) : info(std::move(info)),
+    content(content),
+    packs(packs),
+    wfile(std::move(worldFiles)) {}
 
 World::~World() {
 }
 
 void World::updateTimers(float delta) {
-    VOXELENGINE_PROFILE;
     info.daytime += delta * info.daytimeSpeed * DAYIME_SPECIFIC_SPEED;
     info.daytime = std::fmod(info.daytime, 1.0f);
     info.totalTime += delta;

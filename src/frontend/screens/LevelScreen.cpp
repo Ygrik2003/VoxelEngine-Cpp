@@ -1,25 +1,23 @@
 #include "LevelScreen.hpp"
 
-#include "assets/Assets.hpp"
 #include "audio/audio.hpp"
 #include "coders/imageio.hpp"
 #include "content/Content.hpp"
 #include "core_defs.hpp"
 #include "debug/Logger.hpp"
 #include "engine/Engine.hpp"
-#include "engine/Profiler.hpp"
-#include "engine/ProfilerGpu.hpp"
+#include "assets/Assets.hpp"
 #include "frontend/ContentGfxCache.hpp"
 #include "frontend/LevelFrontend.hpp"
 #include "frontend/hud.hpp"
 #include "graphics/core/DrawContext.hpp"
 #include "graphics/core/ImageData.hpp"
 #include "graphics/core/PostProcessing.hpp"
-#include "graphics/core/TextureAnimation.hpp"
 #include "graphics/render/Decorator.hpp"
 #include "graphics/render/WorldRenderer.hpp"
 #include "graphics/ui/GUI.hpp"
 #include "graphics/ui/elements/Menu.hpp"
+#include "graphics/core/TextureAnimation.hpp"
 #include "io/io.hpp"
 #include "logic/LevelController.hpp"
 #include "logic/PlayerController.hpp"
@@ -44,12 +42,9 @@ LevelScreen::LevelScreen(
 )
     : Screen(engine),
       world(*levelPtr->getWorld()),
-      postProcessing(
-          std::make_unique<PostProcessing>(
-              levelPtr->content.getIndices(ResourceType::POST_EFFECT_SLOT)
-                  .size()
-          )
-      ),
+      postProcessing(std::make_unique<PostProcessing>(
+          levelPtr->content.getIndices(ResourceType::POST_EFFECT_SLOT).size()
+      )),
       gui(engine.getGUI()),
       input(engine.getInput()) {
     Level* level = levelPtr.get();
@@ -71,7 +66,9 @@ LevelScreen::LevelScreen(
     frontend = std::make_unique<LevelFrontend>(
         engine, player, controller.get(), settings
     );
-    renderer = std::make_unique<WorldRenderer>(engine, *frontend, *player);
+    renderer = std::make_unique<WorldRenderer>(
+        engine, *frontend, *player
+    );
     hud = std::make_unique<Hud>(engine, *frontend, *player);
 
     decorator = std::make_unique<Decorator>(
@@ -186,7 +183,6 @@ void LevelScreen::saveWorldPreview() {
 }
 
 void LevelScreen::updateHotkeys() {
-    VOXELENGINE_PROFILE;
     auto& settings = engine.getSettings();
 
     if (input.jpressed(Keycode::F1)) {
@@ -225,12 +221,12 @@ void LevelScreen::updateAudio() {
 
 void LevelScreen::update(float delta) {
     auto& gui = engine.getGUI();
-
+    
     if (!gui.isFocusCaught()) {
         updateHotkeys();
     }
     updateAudio();
-
+    
     auto menu = gui.getMenu();
     bool inputLocked =
         menu->hasOpenPage() || hud->isInventoryOpen() || gui.isFocusCaught();
@@ -238,9 +234,7 @@ void LevelScreen::update(float delta) {
     if (!paused) {
         world.updateTimers(delta);
         animator->update(delta);
-        playerController->update(
-            delta, inputLocked ? nullptr : &engine.getInput()
-        );
+        playerController->update(delta, inputLocked ? nullptr : &engine.getInput());
     }
     controller->update(glm::min(delta, 0.2f), paused);
     playerController->postUpdate(
@@ -259,9 +253,6 @@ void LevelScreen::update(float delta) {
 }
 
 void LevelScreen::draw(float delta) {
-    VOXELENGINE_PROFILE;
-    VOXELENGINE_PROFILE_GPU("LevelScreen::draw");
-
     auto camera = playerController->getPlayer()->currentCamera;
 
     DrawContext ctx(nullptr, engine.getWindow(), batch.get());
