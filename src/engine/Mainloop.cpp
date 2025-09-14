@@ -6,6 +6,9 @@
 #include "frontend/screens/LevelScreen.hpp"
 #include "window/Window.hpp"
 #include "world/Level.hpp"
+#include "engine/Profiler.hpp"
+#include "engine/ProfilerGpu.hpp"
+
 
 static debug::Logger logger("mainloop");
 
@@ -34,6 +37,9 @@ void Mainloop::run() {
     
     logger.info() << "main loop started";
     while (!window.isShouldClose()){
+        // VOXELENGINE_PROFILE;        
+        // VOXELENGINE_PROFILE_GPU("Mainloop::run");
+        
         time.update(window.time());
         engine.updateFrontend();
         if (!window.isIconified()) {

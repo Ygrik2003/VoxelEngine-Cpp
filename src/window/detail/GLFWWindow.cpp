@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "debug/Logger.hpp"
+#include "engine/ProfilerGpu.hpp"
 #include "graphics/core/ImageData.hpp"
 #include "graphics/core/Texture.hpp"
 #include "settings.hpp"
@@ -724,6 +725,9 @@ std::tuple<
         *inputPtr, window, settings, width, height
     );
     glfwSetWindowUserPointer(window, windowPtr.get());
+
+    // VOXELENGINE_PROFILE_GPU_CONTEXT;
+
     return {std::move(windowPtr), std::move(inputPtr)};
 }
 
