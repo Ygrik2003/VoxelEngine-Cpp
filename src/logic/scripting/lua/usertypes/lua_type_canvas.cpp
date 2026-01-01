@@ -125,7 +125,9 @@ static RGBA get_rgba(State* L, int first) {
             rgba.rgba = static_cast<uint>(tointeger(L, first));
             break;
         case 3:
-            rgba.a = static_cast<ubyte>(tointeger(L, first + 3));
+            if (lua::isnumber(L, first + 3)) {
+                rgba.a = static_cast<ubyte>(tointeger(L, first + 3));
+            }
             [[fallthrough]];
         case 2:
             rgba.r = static_cast<ubyte>(tointeger(L, first));
@@ -199,6 +201,18 @@ static int l_blit(State* L) {
     return 0;
 }
 
+static int l_rect(State* L) {
+    auto& canvas = require_canvas(L, 1);
+    auto& image = canvas.getData();
+    int x = tointeger(L, 2);
+    int y = tointeger(L, 3);
+    int w = tointeger(L, 4);
+    int h = tointeger(L, 5);
+    RGBA rgba = get_rgba(L, 6);
+    image.drawRect(x, y, w, h, glm::ivec4 {rgba.r, rgba.g, rgba.b, rgba.a});
+    return 0;
+}
+
 static int l_set_data(State* L) {
     auto& canvas = require_canvas(L, 1);
     auto& image = canvas.getData();
@@ -206,6 +220,14 @@ static int l_set_data(State* L) {
 
     if (lua::isstring(L, 2)) {
         auto ptr = reinterpret_cast<ubyte*>(std::stoull(lua::tostring(L, 2)));
+        int len = lua::touinteger(L, 3);
+        if (len < image.getDataSize()) {
+            throw std::runtime_error(
+                "data size mismatch expected " +
+                std::to_string(image.getDataSize()) + ", got " +
+                std::to_string(len)
+            );
+        }
         std::memcpy(data, ptr, image.getDataSize());
         return 0;
     }
@@ -316,6 +338,7 @@ static std::unordered_map<std::string, lua_CFunction> methods {
     {"line", lua::wrap<l_line>},
     {"blit", lua::wrap<l_blit>},
     {"clear", lua::wrap<l_clear>},
+    {"rect", lua::wrap<l_rect>},
     {"update", lua::wrap<l_update>},
     {"create_texture", lua::wrap<l_create_texture>},
     {"unbind_texture", lua::wrap<l_unbind_texture>},

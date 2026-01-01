@@ -925,7 +925,9 @@ void TextBox::onTab(bool shiftPressed) {
 void TextBox::refreshSyntax() {
     if (!syntax.empty()) {
         const auto& processor = gui.getEditor().getSyntaxProcessor();
-        if (auto styles = processor.highlight(syntax, input)) {
+        auto scheme = gui.getSyntaxColorScheme();
+        if (auto styles =
+                processor.highlight(scheme ? *scheme : FontStylesScheme {}, syntax, input)) {
             label->setStyles(std::move(styles));
         }
     }

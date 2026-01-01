@@ -16,7 +16,7 @@ ImageData::ImageData(ImageFormat format, uint width, uint height)
         default:
             throw std::runtime_error("format is not supported");
     }
-    data = std::make_unique<ubyte[]>(width * height * pixsize);
+    data = std::make_unique<ubyte[]>((width + width % 2) * (height + width % 2) * pixsize);
 }
 
 ImageData::ImageData(ImageFormat format, uint width, uint height, std::unique_ptr<ubyte[]> data) 

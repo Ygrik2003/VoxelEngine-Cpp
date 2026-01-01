@@ -120,7 +120,7 @@ static int l_get_command_info(lua::State* L) {
 }
 
 const luaL_Reg consolelib[] = {
-    {"add_command", lua::wrap<l_add_command>},
+    {"__add_command", lua::wrap<l_add_command>},
     {"execute", lua::wrap<l_execute>},
     {"get", lua::wrap<l_get>},
     {"set", lua::wrap<l_set>},

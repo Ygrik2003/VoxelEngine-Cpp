@@ -1,12 +1,21 @@
 # События движка
 
+## Содержание
+- [События блоков](#события-блоков)
+- [События предметов](#события-предметов)
+- [События мира](#события-мира)
+- [События макета](#события-макета)
+- [События HUD](#события-hud)
+- [События ECS](ecs.md#события-компонента)
+- [Библиотека *Events*](#библиотека-events)
+
 ## События блоков
 
 Функции для обработки событий, прописываемые в скрипте блока.
 
 > [!WARNING]
-> Mass events such as on_block_tick, on_block_present, and on_block_removed, 
-> if used carelessly or excessively, can lead to performance issues.
+> Массовые события, такие как on_block_tick, on_block_present и on_block_removed, 
+> при небрежном или чрезмерном использовании, могут привести к проблемам с производительностью.
 
 ```lua
 function on_placed(x, y, z, playerid)
@@ -48,7 +57,7 @@ function on_random_update(x, y, z)
 function on_blocks_tick(tps: int)
 ```
 
-Вызывается tps (20) раз в секунду. Используйте 1/tps вместо `time.delta()`.
+Вызывается tps (20 / tick-interval) раз в секунду. Используйте 1/tps вместо `time.delta()`.
 
 ```lua
 function on_block_tick(x, y, z, tps: number)
@@ -71,12 +80,6 @@ function on_block_removed(x, y, z)
 ```
 
 Вызывается при выгрузке чанка, в котором находится блок.
-
-```lua
-function on_player_tick(playerid: int, tps: int)
-```
-
-Вызывается tps (20) раз в секунду. Используйте 1/tps вместо `time.delta()`.
 
 ## События предметов
 
@@ -152,6 +155,12 @@ function on_block_interact(blockid, x, y, z, playerid) -> bool
 
 Вызывается при нажатии на блок ПКМ. Предотвращает установку блоков, если возвращает `true`
 
+```lua
+function on_player_tick(playerid: int, tps: int)
+```
+
+Вызывается tps (20) раз в секунду. Используйте 1/tps вместо `time.delta()`.
+
 ### События чанков (world.lua)
 
 ```lua
@@ -220,6 +229,9 @@ function on_hud_close(playerid: int)
 ```
 
 Вызывается при выходе из мира, перед его сохранением.
+
+## События ECS
+События **ECS** описаны [тут](ecs.md#события-компонента)
 
 ## Библиотека *events*
 

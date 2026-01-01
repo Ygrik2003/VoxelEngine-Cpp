@@ -126,9 +126,7 @@ static std::wstring get_caption_string(
             langs::get(util::str2wstr_utf8(caption->asString()))
         );
     } else {
-        return util::pascal_case(
-            langs::get(util::str2wstr_utf8(item.caption))
-        );
+        return util::pascal_case(langs::get(util::str2wstr_utf8(item.caption)));
     }
 }
 // TODO: Refactor
@@ -382,7 +380,7 @@ void SlotView::performLeftClick(ItemStack& stack, ItemStack& grabbed) {
 
 void SlotView::performRightClick(ItemStack& stack, ItemStack& grabbed) {
     if (layout.rightClick) {
-        layout.rightClick(inventoryid, stack);
+        layout.rightClick(inventoryId, stack);
         if (layout.updateFunc) {
             layout.updateFunc(layout.index, stack);
         }
@@ -395,7 +393,11 @@ void SlotView::performRightClick(ItemStack& stack, ItemStack& grabbed) {
             int halfremain = stack.getCount() / 2;
             grabbed.setCount(stack.getCount() - halfremain);
             // reset all data in the origin slot
-            stack = ItemStack(stack.getItemId(), halfremain);
+            if (stack.getCount() > 1) {
+                stack = ItemStack(stack.getItemId(), halfremain);
+            } else {
+                stack = ItemStack(0, 0);
+            }
         }
         return;
     }
@@ -452,10 +454,11 @@ const std::wstring& SlotView::getTooltip() const {
 }
 
 void SlotView::bind(
-    int64_t inventoryid, ItemStack& stack, const Content* content
+    int64_t inventoryid, ItemStack& stack, size_t index, const Content* content
 ) {
-    this->inventoryid = inventoryid;
+    this->inventoryId = inventoryid;
     bound = &stack;
+    this->index = index;
     this->content = content;
 }
 
@@ -465,6 +468,14 @@ const SlotLayout& SlotView::getLayout() const {
 
 ItemStack& SlotView::getStack() {
     return *bound;
+}
+
+int64_t SlotView::getInventoryId() const {
+    return inventoryId;
+}
+
+size_t SlotView::getIndex() const {
+    return index;
 }
 
 InventoryView::InventoryView(GUI& gui) : Container(gui, glm::vec2()) {
@@ -510,9 +521,11 @@ void InventoryView::bind(
     this->inventory = inventory;
     this->content = content;
     for (auto slot : slots) {
+        const auto& layout = slot->getLayout();
         slot->bind(
             inventory->getId(),
-            inventory->getSlot(slot->getLayout().index),
+            inventory->getSlot(layout.index),
+            layout.index,
             content
         );
     }

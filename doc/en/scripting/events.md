@@ -48,7 +48,7 @@ Called on random block update (grass growth)
 function on_blocks_tick(tps: int)
 ```
 
-Called tps (20) times per second. Use 1/tps instead of `time.delta()`.
+Called tps (20 / tick-interval) times per second. Use 1/tps instead of `time.delta()`.
 
 ```lua
 function on_block_tick(x, y, z, tps: number)

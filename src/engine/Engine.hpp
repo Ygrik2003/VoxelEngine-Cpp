@@ -3,9 +3,7 @@
 #include "CoreParameters.hpp"
 #include "PostRunnables.hpp"
 #include "Time.hpp"
-#include "delegates.hpp"
 #include "settings.hpp"
-#include "typedefs.hpp"
 #include "util/ObjectsKeeper.hpp"
 
 #include <memory>
@@ -161,8 +159,8 @@ public:
         return *window;
     }
 
-    network::Network& getNetwork() {
-        return *network;
+    network::Network* getNetwork() {
+        return network.get();
     }
 
     cmd::CommandsInterpreter& getCmd() {

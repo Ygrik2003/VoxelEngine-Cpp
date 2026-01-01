@@ -24,7 +24,7 @@ BlocksController::BlocksController(const Level& level, Lighting* lighting)
       chunks(*level.chunks),
       lighting(lighting),
       randTickClock(20, 3),
-      blocksTickClock(20, 1),
+      blocksTickClock(20, 3),
       worldTickClock(20, 1) {
 }
 
@@ -124,7 +124,7 @@ void BlocksController::update(float delta, uint padding) {
         randomTick(randTickClock.getPart(), randTickClock.getParts(), padding);
     }
     if (blocksTickClock.update(delta)) {
-        onBlocksTick(blocksTickClock.getPart(), blocksTickClock.getParts());
+        onBlocksTick(blocksTickClock.getTickId(), blocksTickClock.getParts());
     }
     if (worldTickClock.update(delta)) {
         scripting::on_world_tick(worldTickClock.getTickRate());
@@ -151,8 +151,12 @@ void BlocksController::randomTick(
 
     for (int s = 0; s < segments; s++) {
         for (int i = 0; i < 4; i++) {
+            int segmentY = s * segheight;
+            if (segmentY  > chunk.top) {
+                break;
+            }
             int bx = random.rand() % CHUNK_W;
-            int by = random.rand() % segheight + s * segheight;
+            int by = random.rand() % segheight + segmentY;
             int bz = random.rand() % CHUNK_D;
             const voxel& vox = chunk.voxels[vox_index(bx, by, bz)];
             auto& block = indices->blocks.require(vox.id);

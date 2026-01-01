@@ -150,7 +150,7 @@ bool ChunksController::buildLights(
         }
     }
     if (surrounding == MIN_SURROUNDING) {
-        if (lighting) {
+        if (lighting && chunk->lightmap) {
             bool lightsCache = chunk->flags.loadedLights;
             if (!lightsCache) {
                 lighting->buildSkyLight(chunk->x, chunk->z);
@@ -170,7 +170,7 @@ void ChunksController::createChunk(const Player& player, int x, int z) const {
         }
         return;
     }
-    auto chunk = level.chunks->create(x, z);
+    auto chunk = level.chunks->create(x, z, lighting != nullptr);
     player.chunks->putChunk(chunk);
     auto& chunkFlags = chunk->flags;
     if (!chunkFlags.loaded) {
@@ -179,7 +179,7 @@ void ChunksController::createChunk(const Player& player, int x, int z) const {
     }
     chunk->updateHeights();
     level.events->trigger(LevelEventType::CHUNK_PRESENT, chunk.get());
-    if (!chunkFlags.loadedLights) {
+    if (!chunkFlags.loadedLights && chunk->lightmap) {
         Lighting::prebuildSkyLight(*chunk, *level.content.getIndices());
     }
     chunkFlags.loaded = true;

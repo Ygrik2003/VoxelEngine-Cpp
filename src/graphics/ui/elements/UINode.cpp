@@ -11,8 +11,7 @@ using gui::Align;
 UINode::UINode(GUI& gui, glm::vec2 size) : gui(gui), size(size) {
 }
 
-UINode::~UINode() {
-}
+UINode::~UINode() = default;
 
 bool UINode::isVisible() const {
     if (visible && parent) {
@@ -48,8 +47,13 @@ void UINode::setAlign(Align align) {
     this->align = align;
 }
 
-void UINode::setHover(bool flag) {
+void UINode::setMouseEnter(bool flag) {
+    actions.notify(flag ? UIAction::MOUSE_ENTER : UIAction::MOUSE_LEAVE, gui);
+}
+
+void UINode::setMouseOver(bool flag) {
     hover = flag;
+    actions.notify(flag ? UIAction::MOUSE_OVER : UIAction::MOUSE_OUT, gui);
 }
 
 bool UINode::isHover() const {
@@ -64,24 +68,8 @@ UINode* UINode::getParent() const {
     return parent;
 }
 
-void UINode::listenClick(OnAction action) {
-    actions.listen(UIAction::CLICK, std::move(action));
-}
-
-void UINode::listenRightClick(OnAction action) {
-    actions.listen(UIAction::RIGHT_CLICK, std::move(action));
-}
-
-void UINode::listenDoubleClick(OnAction action) {
-    actions.listen(UIAction::DOUBLE_CLICK, std::move(action));
-}
-
-void UINode::listenFocus(OnAction action) {
-    actions.listen(UIAction::FOCUS, std::move(action));
-}
-
-void UINode::listenDefocus(OnAction action) {
-    actions.listen(UIAction::DEFOCUS, std::move(action));
+void UINode::listenAction(UIAction type, OnAction action) {
+    actions.listen(type, std::move(action));
 }
 
 void UINode::click(int, int) {
@@ -398,10 +386,18 @@ bool UINode::isSubnodeOf(const UINode* node) {
 
 void UINode::getIndices(
     const std::shared_ptr<UINode>& node,
-    std::unordered_map<std::string, std::shared_ptr<UINode>>& map
+    std::unordered_map<std::string, std::weak_ptr<UINode>>& map
 ) {
     const std::string& id = node->getId();
     if (!id.empty()) {
+        const auto& found = map.find(id);
+
+        if (found != map.end()) {
+            auto prev = found->second.lock();
+            if (prev && prev->getParent()) {
+                return;
+            }
+        }
         map[id] = node;
     }
     auto container = std::dynamic_pointer_cast<gui::Container>(node);

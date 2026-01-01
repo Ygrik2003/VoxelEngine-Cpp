@@ -156,7 +156,7 @@ public:
     void setPause(bool pause);
 
     /// @brief Show player inventory in inventory-mode
-    void openInventory();
+    void openInventory(bool playerInventory = true);
 
     /// @brief Show inventory in inventory-mode
     /// @param doc ui layout

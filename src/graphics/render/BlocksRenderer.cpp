@@ -28,10 +28,6 @@ BlocksRenderer::BlocksRenderer(
     cache(cache),
     settings(settings)
 {
-    voxelsBuffer = std::make_unique<VoxelsVolume>(
-        CHUNK_W + voxelBufferPadding*2,
-        CHUNK_H,
-        CHUNK_D + voxelBufferPadding*2);
     blockDefsCache = content.getIndices()->blocks.getDefs();
 }
 
@@ -313,6 +309,7 @@ void BlocksRenderer::blockCustomModel(
             overflow = true;
             return;
         }
+        bool shading = mesh.shading && !block.shadeless;
         for (int triangle = 0; triangle < mesh.vertices.size() / 3; triangle++) {
             auto r = mesh.vertices[triangle * 3 + (triangle % 2) * 2].coord -
                      mesh.vertices[triangle * 3 + 1].coord;
@@ -329,7 +326,9 @@ void BlocksRenderer::blockCustomModel(
                       0.5f;
             vp = vp.x * X + vp.y * Y + vp.z * Z;
 
-            if (!isOpen(glm::floor(coord + vp + 0.5f + n * 1e-3f), block, variant) && is_aligned(n)) {
+            if (!block.rt.extended
+                && !isOpen(glm::floor(coord + vp + 0.5f + n * 1e-3f), block, variant)
+                && is_aligned(n)) {
                 continue;
             }
 
@@ -342,18 +341,29 @@ void BlocksRenderer::blockCustomModel(
                 const auto& vcoord = vertex.coord - 0.5f;
 
                 glm::vec4 aoColor {1.0f, 1.0f, 1.0f, 1.0f};
-                if (mesh.shading && ao) {
-                    auto p = coord + vcoord.x * X + vcoord.y * Y +
-                             vcoord.z * Z + r * 0.5f + t * 0.5f + n * 0.5f;
-                    aoColor = pickSoftLight(p.x, p.y, p.z, glm::ivec3(r), glm::ivec3(t));
+                if (shading && ao) {
+                    const float eps = 0.05f;
+                    auto p = coord + vcoord.x * X + vcoord.y * Y + vcoord.z * Z +
+                             r * 0.5f + t * 0.5f + n * eps;
+                    auto p1 = p + n * eps;
+                    auto p2 = p + n * 0.5f;
+                    aoColor = pickSoftLight(p1.x, p1.y, p1.z, glm::ivec3(r), glm::ivec3(t));
+                    if (!block.lightPassing) {
+                        aoColor = glm::max(
+                            aoColor,
+                            pickSoftLight(
+                                p2.x, p2.y, p2.z, glm::ivec3(r), glm::ivec3(t)
+                            )
+                        );
+                    }
                 }
                 this->vertex(
                     coord + vcoord.x * X + vcoord.y * Y + vcoord.z * Z,
                     vertex.uv.x,
                     vertex.uv.y,
-                    mesh.shading ? (glm::vec4(d, d, d, d) * aoColor) : glm::vec4(1, 1, 1, d),
+                    shading ? (glm::vec4(d, d, d, d) * aoColor) : glm::vec4(1, 1, 1, d),
                     n,
-                    mesh.shading ? 0.0f : 1.0
+                    shading ? 0.0f : 1.0
                 );
                 indexBuffer[indexCount++] = vertexOffset++;
             }
@@ -404,22 +414,22 @@ void BlocksRenderer::blockCube(
         }
     } else {
         if (isOpen(coord + Z, block, variant)) {
-            face(coord, X, Y, Z, texfaces[5], pickLight(coord + Z), lights);
+            face(coord, X, Y, Z, texfaces[5], lights ? pickLight(coord + Z) : glm::vec4(1,1,1,0), lights);
         }
         if (isOpen(coord - Z, block, variant)) {
-            face(coord, -X, Y, -Z, texfaces[4], pickLight(coord - Z), lights);
+            face(coord, -X, Y, -Z, texfaces[4], lights ? pickLight(coord - Z) : glm::vec4(1,1,1,0), lights);
         }
         if (isOpen(coord + Y, block, variant)) {
-            face(coord, X, -Z, Y, texfaces[3], pickLight(coord + Y), lights);
+            face(coord, X, -Z, Y, texfaces[3], lights ? pickLight(coord + Y) : glm::vec4(1,1,1,0), lights);
         }
         if (isOpen(coord - Y, block, variant)) {
-            face(coord, X, Z, -Y, texfaces[2], pickLight(coord - Y), lights);
+            face(coord, X, Z, -Y, texfaces[2], lights ? pickLight(coord - Y) : glm::vec4(1,1,1,0), lights);
         }
         if (isOpen(coord + X, block, variant)) {
-            face(coord, -Z, Y, X, texfaces[1], pickLight(coord + X), lights);
+            face(coord, -Z, Y, X, texfaces[1], lights ? pickLight(coord + X) : glm::vec4(1,1,1,0), lights);
         }
         if (isOpen(coord - X, block, variant)) {
-            face(coord, Z, Y, -X, texfaces[0], pickLight(coord - X), lights);
+            face(coord, Z, Y, -X, texfaces[0], lights ? pickLight(coord - X) : glm::vec4(1,1,1,0), lights);
         }
     }
 }
@@ -442,10 +452,7 @@ glm::vec4 BlocksRenderer::pickLight(int x, int y, int z) const {
     if (isOpenForLight(x, y, z)) {
         light_t light = voxelsBuffer->pickLight(chunk->x * CHUNK_W + x, y,
                                                 chunk->z * CHUNK_D + z);
-        return glm::vec4(Lightmap::extract(light, 0),
-                         Lightmap::extract(light, 1),
-                         Lightmap::extract(light, 2),
-                         Lightmap::extract(light, 3)) / 15.0f;
+        return Lightmap::extractNormalized(light);
     } else {
         return glm::vec4(0.0f);
     }
@@ -687,13 +694,9 @@ SortingMeshData BlocksRenderer::renderTranslucent(
     return sortingMesh;
 }
 
-void BlocksRenderer::build(const Chunk* chunk, const Chunks* chunks) {
+void BlocksRenderer::build(const Chunk* chunk, const VoxelsVolume& volume) {
     this->chunk = chunk;
-    voxelsBuffer->setPosition(
-        chunk->x * CHUNK_W - voxelBufferPadding, 0,
-        chunk->z * CHUNK_D - voxelBufferPadding);
-    chunks->getVoxels(*voxelsBuffer, settings.graphics.backlight.get());
-
+    this->voxelsBuffer = &volume;
     if (voxelsBuffer->pickBlockId(
         chunk->x * CHUNK_W, 0, chunk->z * CHUNK_D
     ) == BLOCK_VOID) {
@@ -734,7 +737,7 @@ void BlocksRenderer::build(const Chunk* chunk, const Chunks* chunks) {
     indexCount = 0;
     denseIndexCount = 0;
 
-    denseRender = false; //settings.graphics.denseRender.get();
+    denseRender = false;
     densePass = false;
     render(voxels, beginEnds);
 
@@ -763,15 +766,18 @@ ChunkMeshData BlocksRenderer::createMesh() {
                 util::Buffer(denseIndexBuffer.get(), denseIndexCount),
             },
             util::Buffer(
-                ChunkVertex::ATTRIBUTES, sizeof(ChunkVertex::ATTRIBUTES) / sizeof(VertexAttribute)
+                ChunkVertex::ATTRIBUTES,
+                sizeof(ChunkVertex::ATTRIBUTES) / sizeof(VertexAttribute)
             )
         ),
         std::move(sortingMesh)
     };
 }
 
-ChunkMesh BlocksRenderer::render(const Chunk *chunk, const Chunks *chunks) {
-    build(chunk, chunks);
+ChunkMesh BlocksRenderer::render(
+    const Chunk* chunk, const VoxelsVolume& volume
+) {
+    build(chunk, volume);
 
     return ChunkMesh{std::make_unique<Mesh<ChunkVertex>>(
         vertexBuffer.get(), vertexCount, 
@@ -782,11 +788,6 @@ ChunkMesh BlocksRenderer::render(const Chunk *chunk, const Chunks *chunks) {
     ), std::move(sortingMesh)};
 }
 
-VoxelsVolume* BlocksRenderer::getVoxelsBuffer() const {
-    return voxelsBuffer.get();
-}
-
 size_t BlocksRenderer::getMemoryConsumption() const {
-    size_t volume = voxelsBuffer->getW() * voxelsBuffer->getH() * voxelsBuffer->getD();
-    return capacity * (sizeof(ChunkVertex) + sizeof(uint32_t) * 2) + volume * (sizeof(voxel) + sizeof(light_t));
+    return capacity * (sizeof(ChunkVertex) + sizeof(uint32_t) * 2);
 }

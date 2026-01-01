@@ -16,6 +16,8 @@ struct AudioSettings {
     NumberSetting volumeUI {1.0f, 0.0f, 1.0f, setting_format::percent};
     NumberSetting volumeAmbient {1.0f, 0.0f, 1.0f, setting_format::percent};
     NumberSetting volumeMusic {1.0f, 0.0f, 1.0f, setting_format::percent};
+
+    StringSetting inputDevice {"auto"};
 };
 
 struct DisplaySettings {
@@ -79,8 +81,8 @@ struct GraphicsSettings {
     IntegerSetting chunkMaxRenderers {6, -4, 32};
     /// @brief Advanced render pipeline
     FlagSetting advancedRender {true};
-    /// @brief Screen space ambient occlusion
-    FlagSetting ssao {true};
+    /// @brief Screen space ambient occlusion quality
+    IntegerSetting ssao {1, 0, 2};
     /// @brief Shadows quality
     IntegerSetting shadowsQuality {0, 0, 3};
     /// @brief Dense render distance

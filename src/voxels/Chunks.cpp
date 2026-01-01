@@ -100,6 +100,10 @@ bool Chunks::isObstacleBlock(int32_t x, int32_t y, int32_t z) {
     return indices.blocks.require(v->id).obstacle;
 }
 
+light_t Chunks::getLight(const glm::ivec3& pos) const {
+    return getLight(pos.x, pos.y, pos.z);
+}
+
 ubyte Chunks::getLight(int32_t x, int32_t y, int32_t z, int channel) const {
     if (y < 0 || y >= CHUNK_H) {
         return 0;
@@ -115,9 +119,10 @@ ubyte Chunks::getLight(int32_t x, int32_t y, int32_t z, int channel) const {
     if (chunk == nullptr) {
         return 0;
     }
+    assert(chunk->lightmap != nullptr);
     int lx = x - cx * CHUNK_W;
     int lz = z - cz * CHUNK_D;
-    return chunk->lightmap.get(lx, y, lz, channel);
+    return chunk->lightmap->get(lx, y, lz, channel);
 }
 
 light_t Chunks::getLight(int32_t x, int32_t y, int32_t z) const {
@@ -135,9 +140,10 @@ light_t Chunks::getLight(int32_t x, int32_t y, int32_t z) const {
     if (chunk == nullptr) {
         return 0;
     }
+    assert(chunk->lightmap != nullptr);
     int lx = x - cx * CHUNK_W;
     int lz = z - cz * CHUNK_D;
-    return chunk->lightmap.get(lx, y, lz);
+    return chunk->lightmap->get(lx, y, lz);
 }
 
 Chunk* Chunks::getChunkByVoxel(int32_t x, int32_t y, int32_t z) const {
@@ -332,7 +338,8 @@ bool Chunks::putChunk(const std::shared_ptr<Chunk>& chunk) {
 // reduce nesting on next modification
 // 25.06.2024: not now
 // 11.11.2024: not now
-void Chunks::getVoxels(VoxelsVolume& volume, bool backlight) const {
+// 12.12.2025: not now
+void Chunks::getVoxels(VoxelsVolume& volume, bool backlight, int top) const {
     voxel* voxels = volume.getVoxels();
     light_t* lights = volume.getLights();
     int x = volume.getX();
@@ -340,7 +347,7 @@ void Chunks::getVoxels(VoxelsVolume& volume, bool backlight) const {
     int z = volume.getZ();
 
     int w = volume.getW();
-    int h = volume.getH();
+    int h = std::min<int>(volume.getH(), top);
     int d = volume.getD();
 
     int scx = floordiv<CHUNK_W>(x);
@@ -373,7 +380,8 @@ void Chunks::getVoxels(VoxelsVolume& volume, bool backlight) const {
                 }
             } else {
                 const voxel* cvoxels = chunk->voxels;
-                const light_t* clights = chunk->lightmap.getLights();
+                const light_t* clights =
+                    chunk->lightmap ? chunk->lightmap->getLights() : nullptr;
                 for (int ly = y; ly < y + h; ly++) {
                     for (int lz = std::max(z, cz * CHUNK_D);
                              lz < std::min(z + d, (cz + 1) * CHUNK_D);
@@ -390,7 +398,8 @@ void Chunks::getVoxels(VoxelsVolume& volume, bool backlight) const {
                                 CHUNK_D
                             );
                             voxels[vidx] = cvoxels[cidx];
-                            light_t light = clights[cidx];
+                            light_t light = clights ? clights[cidx]
+                                                    : Lightmap::SUN_LIGHT_ONLY;
                             if (backlight) {
                                 const auto block =
                                     indices.blocks.get(voxels[vidx].id);

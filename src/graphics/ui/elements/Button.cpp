@@ -42,7 +42,7 @@ Button::Button(
     }
 
     if (action) {
-        listenClick(action);
+        listenAction(UIAction::CLICK, action);
     }
     setScrollable(false);
 

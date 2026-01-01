@@ -108,7 +108,6 @@ namespace audio {
 
         size_t read(char* buffer, size_t bufferSize) override;
     private:
-        ALAudio* al;
         ALCdevice* device;
         uint channels;
         uint bitsPerSample;

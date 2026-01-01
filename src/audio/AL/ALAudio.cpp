@@ -74,8 +74,7 @@ ALInputDevice::ALInputDevice(
     uint bitsPerSample,
     uint sampleRate
 )
-    : al(al),
-      device(device),
+    : device(device),
       channels(channels),
       bitsPerSample(bitsPerSample),
       sampleRate(sampleRate) {
@@ -486,6 +485,8 @@ ALAudio::ALAudio(ALCdevice* device, ALCcontext* context)
     for (auto& name : inputDevices) {
         logger.info() << "  " << name;
     }
+
+    alDopplerFactor(1.0 / 3.0);
 }
 
 ALAudio::~ALAudio() {

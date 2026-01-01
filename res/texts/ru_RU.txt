@@ -109,6 +109,7 @@ settings.Conflict=Найдены возможные конфликты
 settings.Windowed=Оконный
 settings.Borderless=Безрамочный
 settings.Microphone=Микрофон
+settings.microphone.None=Нет
 
 # Управление
 chunks.reload=Перезагрузить Чанки

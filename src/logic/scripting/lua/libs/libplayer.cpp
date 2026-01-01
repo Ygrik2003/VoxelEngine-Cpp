@@ -10,10 +10,18 @@
 #include "physics/Hitbox.hpp"
 #include "window/Camera.hpp"
 #include "world/Level.hpp"
+#include "engine/Engine.hpp"
 
 using namespace scripting;
 
 inline Player* get_player(lua::State* L, int idx) {
+    if (!lua::isnumber(L, idx)) {
+        if (engine->isHeadless()) {
+            throw std::runtime_error(
+                "player id required as argument #" + std::to_string(idx)
+            );
+        }
+    }
     return level->players->get(lua::tointeger(L, idx));
 }
 

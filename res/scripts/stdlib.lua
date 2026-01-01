@@ -24,6 +24,12 @@ function tb_frame_tostring(frame)
     return s
 end
 
+local core_set_setting = core.set_setting
+function core.set_setting(name, value, ...)
+    core_set_setting(name, value, ...)
+    events.emit("core:setting."..name..".set", value)
+end
+
 local function complete_app_lib(app)
     app.sleep = sleep
     app.script = __VC_SCRIPT_NAME
@@ -150,6 +156,18 @@ _MENU = _GUI_ROOT.menu
 menu = _MENU
 gui.root = _GUI_ROOT
 
+do
+    local status, err = pcall(function()
+        local default_styles = toml.parse(file.read(
+            "res:devtools/default_syntax_scheme.toml"
+        ))
+        gui.set_syntax_styles(default_styles)
+    end)
+    if not status then
+        debug.error("could not to load default syntax scheme: "..err)
+    end
+end
+
 ---  Console library extension ---
 console.cheats = {}
 
@@ -169,6 +187,42 @@ function console.log(...)
         text = '\n'..text
     end
     log_element:paste(text)
+end
+
+local console_add_command = console.__add_command
+console.__add_command = nil
+
+function console.add_command(scheme, description, handler, is_cheat)
+    console_add_command(scheme, description, handler)
+    if not is_cheat then return end
+
+    local name = string.match(scheme, "^(%S+)")
+    if not name then
+        error("Incorrect command syntax, command name not found")
+    end
+
+    table.insert_unique(console.cheats, name)
+end
+
+function console.is_cheat(name)
+    if not table.has(console.get_commands_list(), name) then
+        error(string.format("command \"%s\" not found", name))
+    end
+
+    return table.has(console.cheats, name)
+end
+
+function console.set_cheat(name, status)
+    local is_cheat = console.is_cheat(name)
+    if status and not is_cheat then
+        table.insert(console.cheats, name)
+        return true
+    elseif not status and is_cheat then
+        table.remove_value(console.cheats, name)
+        return true
+    end
+
+    return false
 end
 
 function console.chat(...)
@@ -445,6 +499,7 @@ local __post_runnables = {}
 
 local fn_audio_reset_fetch_buffer = audio.__reset_fetch_buffer
 audio.__reset_fetch_buffer = nil
+core.get_core_token = audio.input.__get_core_token
 
 function __process_post_runnables()
     if #__post_runnables then
@@ -474,8 +529,10 @@ function __process_post_runnables()
     fn_audio_reset_fetch_buffer()
     debug.pull_events()
     network.__process_events()
-    block.__process_register_events()
-    block.__perform_ticks(time.delta())
+    if not hud or not hud.is_paused() then
+        block.__process_register_events()
+        block.__perform_ticks(time.delta())
+    end
 end
 
 function time.post_runnable(runnable)

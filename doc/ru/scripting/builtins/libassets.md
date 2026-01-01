@@ -10,20 +10,20 @@ assets.load_texture(
     -- Массив байт файла изображения
     data: table | Bytearray,
     -- Имя текстуры после загрузки
-    name: str,
+    name: string,
     -- Формат файла изображения (поддерживается только png)
     [опционально]
-    format: str = "png"
+    format: string = "png"
 )
 
 -- Парсит и загружает 3D модель
 assets.parse_model(
     -- Формат файла модели (xml / vcm)
-    format: str,
+    format: string,
     -- Содержимое файла модели
-    content: str,
+    content: string,
     -- Имя модели после загрузки
-    name: str
+    name: string
 )
 
 -- Создаёт холст (Canvas) из загруженной текстуры
@@ -31,6 +31,6 @@ assets.to_canvas(
     -- Имя загруженной текстуры. 
     -- Поддерживается как отдельные ("имя_текстуры"), 
     -- так и находящиеся в атласе ("атлас:имя_текстуры").
-    name: str
-) --> Canvas
+    name: string
+) -> Canvas
 ```

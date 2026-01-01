@@ -247,5 +247,7 @@ template<> void ContentUnitLoader<Block>::loadUnit(
     if (def.hidden && def.pickingItem == def.name + BLOCK_ITEM_SUFFIX) {
         def.pickingItem = CORE_EMPTY;
     }
-    def.scriptFile = pack.id + ":scripts/" + def.scriptName + ".lua";
+    if (root.has("script-name") || def.scriptFile.empty()) {
+        def.scriptFile = pack.id + ":scripts/" + def.scriptName + ".lua";
+    }
 }

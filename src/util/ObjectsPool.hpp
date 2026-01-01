@@ -33,7 +33,9 @@ namespace util {
         std::shared_ptr<T> create(Args&&... args) {
             std::lock_guard lock(mutex);
             if (freeObjects.empty()) {
-                allocateNew();
+                if (!allocateNew()) {
+                    return std::make_shared<T>(std::forward<Args>(args)...);
+                }
             }
             auto ptr = freeObjects.front();
             freeObjects.pop();
@@ -44,12 +46,16 @@ namespace util {
                 freeObjects.push(ptr);
             });
         }
+
+        size_t countTotal() const {
+            return objects.size();
+        }
     private:
         std::vector<std::unique_ptr<void, AlignedDeleter>> objects;
         std::queue<void*> freeObjects;
         std::mutex mutex;
 
-        void allocateNew() {
+        bool allocateNew() {
             std::unique_ptr<void, AlignedDeleter> ptr(
 #if defined(_WIN32)
                 _aligned_malloc(sizeof(T), alignof(T))
@@ -57,8 +63,12 @@ namespace util {
                 std::aligned_alloc(alignof(T), sizeof(T))
 #endif
             );
+            if (ptr == nullptr) {
+                return false;
+            }
             freeObjects.push(ptr.get());
             objects.push_back(std::move(ptr));
+            return true;
         }
     };
 }

@@ -134,10 +134,14 @@ void Engine::initialize(CoreParameters coreParameters) {
     }
     paths = std::make_unique<EnginePaths>(params);
     loadProject();
+    paths->setupProject(*project);
 
     editor = std::make_unique<devtools::Editor>(*this);
     cmd = std::make_unique<cmd::CommandsInterpreter>();
-    network = network::Network::create(settings.network);
+
+    if (project->permissions.has(Permissions::NETWORK)) {
+        network = network::Network::create(settings.network);
+    }
 
     if (!params.debugServerString.empty()) {
         try {
@@ -163,9 +167,9 @@ void Engine::initialize(CoreParameters coreParameters) {
             langs::locale_by_envlocale(platform::detect_locale())
         );
     }
-    content = std::make_unique<ContentControl>(*project, *paths, *input, [this]() {
-        onContentLoad();
-    });
+    content = std::make_unique<ContentControl>(
+        *project, *paths, input.get(), [this]() { onContentLoad(); }
+    );
     scripting::initialize(this);
 
     if (!isHeadless()) {
@@ -173,6 +177,10 @@ void Engine::initialize(CoreParameters coreParameters) {
     }
     keepAlive(settings.ui.language.observe([this](auto lang) {
         langs::setup(lang, paths->resPaths.collectRoots());
+    }, true));
+
+    keepAlive(settings.audio.inputDevice.observe([](auto name) {
+        audio::set_input_device(name == "auto" ? "" : name);
     }, true));
 
     project->loadProjectStartScript();
@@ -228,7 +236,9 @@ void Engine::run() {
 }
 
 void Engine::postUpdate() {
-    network->update();
+    if (network) {
+        network->update();
+    }
     postRunnables.run();
     scripting::process_post_runnables();
 
@@ -261,6 +271,8 @@ void Engine::nextFrame(bool waitForRefresh) {
 }
 
 void Engine::startPauseLoop() {
+    assert (network != nullptr);
+
     bool initialCursorLocked = false;
     if (!isHeadless()) {
         initialCursorLocked = input->isCursorLocked();

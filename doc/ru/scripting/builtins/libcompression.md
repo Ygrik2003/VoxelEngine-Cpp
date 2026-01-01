@@ -6,20 +6,20 @@
 -- Сжимает массив байт.
 compression.encode(
     -- Массив байт
-    data: array of integers, 
+    data: Bytearray | table<int>, 
     -- Алгоритм сжатия (поддерживается только gzip)
     [опционально] algorithm="gzip",
     -- Вернуть результат в table?
     [опционально] usetable=false
-) -> array of integers
+) -> Bytearray | table<int>
 
 -- Разжимает массив байт.
 compression.decode(
     -- Массив байт
-    data: array of integers, 
+    data: Bytearray | table<int>, 
     -- Алгоритм разжатия (поддерживается только gzip)
     [опционально] algorithm="gzip",
     -- Вернуть результат в table?
     [опционально] usetable=false
-) -> array of integers
+) -> Bytearray | table<int>
 ```

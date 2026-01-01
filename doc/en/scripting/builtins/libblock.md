@@ -154,19 +154,22 @@ The function returns a table with the results or nil if the ray does not hit any
 
 The result will use the destination table instead of creating a new one if the optional argument specified.
 
-## Model
-
-Block model information.
+## Model and physics
 
 ```lua
 -- returns block model type (block/aabb/custom/...)
-block.get_model(id: int) -> str
+block.get_model(id: int, [optional] variant_index: int = 0) -> str
 
 -- returns block model name
-block.model_name(id: int) -> str
+block.model_name(id: int, [optional] variant_index: int = 0) -> str
 
 -- returns array of 6 textures assigned to sides of block
-block.get_textures(id: int) -> string table
+block.get_textures(id: int, [optional] variant_index: int = 0) -> string table
+
+-- returns array of two vectors (arrays of 3 numbers):
+-- 1. Minimum point of the hitbox
+-- 2. Hitbox size
+block.get_hitbox(id: int, rotation_index: int, [optional] hitbox_index: int = 0) -> {vec3, vec3}
 ```
 
 ## Data fields

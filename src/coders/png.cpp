@@ -164,12 +164,22 @@ static void read_in_memory(png_structp pngPtr, png_bytep dst, png_size_t toread)
     reader.offset += toread;
 }
 
+void png_error_handler(png_structp pngPtr, png_const_charp errorMessage) {
+    logger.error() << "libpng error: " << errorMessage;
+    if (pngPtr) {
+        longjmp(png_jmpbuf(pngPtr), 1);
+    }
+    abort(); // Should not be reached if longjmp works
+}
+
 std::unique_ptr<ImageData> png::load_image(const ubyte* bytes, size_t size) {
     if (size < 8 || !png_check_sig(bytes, 8)) {
         throw std::runtime_error("invalid png signature");
     }
     png_structp pngPtr = nullptr;
-    pngPtr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
+    pngPtr = png_create_read_struct(
+        PNG_LIBPNG_VER_STRING, nullptr, png_error_handler, nullptr
+    );
     if (pngPtr == nullptr) {
         throw std::runtime_error("failed png_create_read_struct");
     }
@@ -178,6 +188,11 @@ std::unique_ptr<ImageData> png::load_image(const ubyte* bytes, size_t size) {
     if(infoPtr == nullptr) {
         png_destroy_read_struct(&pngPtr, nullptr, nullptr);
         throw std::runtime_error("failed png_create_info_struct");
+    }
+
+    if (setjmp(png_jmpbuf(pngPtr))) {
+        png_destroy_read_struct(&pngPtr, &infoPtr, nullptr);
+        throw std::runtime_error("failed to decode png");
     }
 
     InMemoryReader reader {bytes, size, 0};

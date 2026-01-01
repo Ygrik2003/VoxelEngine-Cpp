@@ -143,66 +143,66 @@ audio.play_sound_2d(
 
 ```lua
 -- остановить воспроизведение спикера
-audio.stop(speakerid: integer)
+audio.stop(speakerid: int)
 
 -- поставить спикер на паузу
-audio.pause(speakerid: integer)
+audio.pause(speakerid: int)
 
 -- снять спикер с паузы
-audio.resume(speakerid: integer)
+audio.resume(speakerid: int)
 
 -- установить зацикливание аудио
-audio.set_loop(speakerid: integer, state: bool)
+audio.set_loop(speakerid: int, state: bool)
 
 -- проверить, зациклено ли аудио (false если не существует)
-audio.is_loop(speakerid: integer) -> bool
+audio.is_loop(speakerid: int) -> bool
 
 -- получить громкость спикера (0.0 если не существует)
-audio.get_volume(speakerid: integer) -> number
+audio.get_volume(speakerid: int) -> number
 
 -- установить громкость спикера
-audio.set_volume(speakerid: integer, volume: number)
+audio.set_volume(speakerid: int, volume: number)
 
 -- получить скорость воспроизведения (1.0 если не существует)
-audio.get_pitch(speakerid: integer) -> number
+audio.get_pitch(speakerid: int) -> number
 
 -- установить скорость воспроизведения
-audio.set_pitch(speakerid: integer, pitch: number)
+audio.set_pitch(speakerid: int, pitch: number)
 
 -- получить временную позицию аудио в секундах (0.0 если не существует)
-audio.get_time(speakerid: integer) -> number
+audio.get_time(speakerid: int) -> number
 
 -- установить временную позицию аудио в секундах
-audio.set_time(speakerid: integer, time: number)
+audio.set_time(speakerid: int, time: number)
 
 -- получить позицию источника звука в мире (nil если не существует)
-audio.get_position(speakerid: integer) -> number, number, number
+audio.get_position(speakerid: int) -> number, number, number
 
 -- установить позицию источника звука в мире
-audio.set_position(speakerid: integer, x: number, y: number, z: number)
+audio.set_position(speakerid: int, x: number, y: number, z: number)
 
 -- получить скорость движения источника звука в мире (nil если не существует)
 -- (используется OpenAL для имитации эффекта Доплера)
-audio.get_velocity(speakerid: integer) -> number, number, number
+audio.get_velocity(speakerid: int) -> number, number, number
 
 -- установить скорость движения источника звука в мире
 -- (используется OpenAL для имитации эффекта Доплера)
-audio.set_velocity(speakerid: integer, x: number, y: number, z: number)
+audio.set_velocity(speakerid: int, x: number, y: number, z: number)
 
 -- получить длительность аудио в секуднах, проигрываемого источником
 -- возвращает 0, если не спикер не существует
 -- так же возвращает 0, если длительность неизвестна (пример: радио)
-audio.get_duration(speakerid: integer) -> number
+audio.get_duration(speakerid: int) -> number
 ```
 
 ### Другие функции
 
 ```lua
 -- получить текущее число живых спикеров
-audio.count_speakers() -> integer
+audio.count_speakers() -> int
 
 -- получить текущее число проигрываемых аудио-потоков
-audio.count_streams() -> integer
+audio.count_streams() -> int
 ```
 
 ### audio.PCMStream
@@ -211,11 +211,11 @@ audio.count_streams() -> integer
 -- создание источника PCM данных
 local stream = audio.PCMStream(
     -- частота дискретизации
-    sample_rate: integer,
+    sample_rate: int,
     -- число каналов (1 - моно, 2 - стерео)
-    channels: integer,
+    channels: int,
     -- число бит на сэмпл (8 или 16)
-    bits_per_sample: integer,
+    bits_per_sample: int,
 )
 
 -- подача PCM данных в поток
@@ -249,7 +249,7 @@ audio.input.fetch(
     -- токен, полученный через audio.input.request_open
     access_token: string,
     -- максимальное размер буфера в байтах
-    [опционально] max_read_size: integer
+    [опционально] max_read_size: int
 )
 ```
 

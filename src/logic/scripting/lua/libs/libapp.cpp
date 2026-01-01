@@ -15,7 +15,11 @@ using namespace scripting;
 static int l_start_debug_instance(lua::State* L) {
     int port = lua::tointeger(L, 1);
     if (port == 0) {
-        port = engine->getNetwork().findFreePort();
+        auto network = engine->getNetwork();
+        if (network == nullptr) {
+            throw std::runtime_error("project has no network permission");
+        }
+        port = network->findFreePort();
         if (port == -1) {
             throw std::runtime_error("could not find free port");
         }

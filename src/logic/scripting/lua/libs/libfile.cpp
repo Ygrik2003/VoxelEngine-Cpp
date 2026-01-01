@@ -39,18 +39,7 @@ static int l_read(lua::State* L) {
     );
 }
 
-static std::set<std::string> writeable_entry_points {
-    "world", "export", "config"
-};
-
 static bool is_writeable(const std::string& entryPoint) {
-    if (entryPoint.length() < 2) {
-        return false;
-    }
-    if (entryPoint.substr(0, 2) == "W.") {
-        return true;
-    }
-    // todo: do better
     auto device = io::get_device(entryPoint);
     if (device == nullptr) {
         return false;
@@ -58,7 +47,7 @@ static bool is_writeable(const std::string& entryPoint) {
     if (dynamic_cast<io::MemoryDevice*>(device.get())) {
         return true;
     }
-    if (writeable_entry_points.find(entryPoint) != writeable_entry_points.end()) {
+    if (engine->getPaths().isWriteable(entryPoint)) {
         return true;
     }
     return false;

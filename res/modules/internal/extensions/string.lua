@@ -105,6 +105,7 @@ end
 string.lower = utf8.lower
 string.upper = utf8.upper
 string.escape = utf8.escape
+string.escape_xml = utf8.escape_xml
 
 local meta = getmetatable("")
 

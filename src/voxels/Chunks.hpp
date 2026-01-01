@@ -9,6 +9,7 @@
 
 #include "typedefs.hpp"
 #include "voxel.hpp"
+#include "constants.hpp"
 #include "util/AreaMap2D.hpp"
 
 class VoxelRenderer;
@@ -75,6 +76,7 @@ public:
         return get(pos.x, pos.y, pos.z);
     }
 
+    light_t getLight(const glm::ivec3& pos) const;
     light_t getLight(int32_t x, int32_t y, int32_t z) const;
     ubyte getLight(int32_t x, int32_t y, int32_t z, int channel) const;
     void set(int32_t x, int32_t y, int32_t z, uint32_t id, blockstate state);
@@ -126,7 +128,7 @@ public:
     bool isReplaceableBlock(int32_t x, int32_t y, int32_t z);
     bool isObstacleBlock(int32_t x, int32_t y, int32_t z);
 
-    void getVoxels(VoxelsVolume& volume, bool backlight = false) const;
+    void getVoxels(VoxelsVolume& volume, bool backlight = false, int top = CHUNK_H) const;
 
     void setCenter(int32_t x, int32_t z);
     void resize(uint32_t newW, uint32_t newD);

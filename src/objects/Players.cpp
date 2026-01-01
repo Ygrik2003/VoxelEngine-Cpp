@@ -4,6 +4,7 @@
 #include <glm/gtx/norm.hpp>
 
 #include "Player.hpp"
+#include "content/Content.hpp"
 #include "items/Inventories.hpp"
 #include "world/Level.hpp"
 #include "world/World.hpp"
@@ -147,6 +148,6 @@ void Players::deserialize(const dv::value& src) {
         if (inventory->getId() == 0) {
             inventory->setId(level.getWorld()->getNextInventoryId());
         }
-        level.inventories->store(player->getInventory());
+        level.inventories->store(inventory);
     }
 }

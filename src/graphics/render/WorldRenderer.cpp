@@ -52,7 +52,6 @@
 #include "NamedSkeletons.hpp"
 #include "TextsRenderer.hpp"
 #include "ChunksRenderer.hpp"
-#include "LinesRenderer.hpp"
 #include "DebugLinesRenderer.hpp"
 #include "ModelBatch.hpp"
 #include "Skybox.hpp"
@@ -117,7 +116,6 @@ WorldRenderer::WorldRenderer(
     hands = std::make_unique<HandsRenderer>(
         *assets, *modelBatch, skeletons->createSkeleton("hand", &skeletonConfig)
     );
-    lines = std::make_unique<LinesRenderer>();
     shadowMapping = std::make_unique<Shadows>(level);
     debugLines = std::make_unique<DebugLinesRenderer>(level);
 }
@@ -386,11 +384,10 @@ void WorldRenderer::renderFrame(
         linesShader.use();
         if (debug && hudVisible) {
             debugLines->render(
-                ctx, camera, *lines, *lineBatch, linesShader, showChunkBorders
+                ctx, camera, *lineBatch, linesShader, showChunkBorders
             );
         }
         linesShader.uniformMatrix("u_projview", projView);
-        lines->draw(*lineBatch);
         lineBatch->flush();
 
         // Translucent blocks

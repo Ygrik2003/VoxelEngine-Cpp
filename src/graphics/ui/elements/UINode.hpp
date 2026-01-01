@@ -2,6 +2,7 @@
 
 #include "delegates.hpp"
 #include "graphics/core/commons.hpp"
+#include "util/CallbacksSet.hpp"
 #include "window/input.hpp"
 
 #include <glm/glm.hpp>
@@ -22,29 +23,6 @@ namespace gui {
     using OnAction = std::function<void(GUI&)>;
     using OnNumberChange = std::function<void(GUI&, double)>;
     using OnStringChange = std::function<void(GUI&, const std::string&)>;
-
-    template<typename... Args>
-    class CallbacksSet {
-    public:
-        using Func = std::function<void(Args...)>;
-    private:
-        std::unique_ptr<std::vector<Func>> callbacks;
-    public:
-        void listen(const Func& callback) {
-            if (callbacks == nullptr) {
-                callbacks = std::make_unique<std::vector<Func>>();
-            }
-            callbacks->push_back(callback);
-        }
-
-        void notify(Args&&... args) {
-            if (callbacks) {
-                for (auto& callback : *callbacks) {
-                    callback(std::forward<Args>(args)...);
-                }
-            }
-        }
-    };
 
     template<class TagT, typename... Args>
     class TaggedCallbacksSet {
@@ -75,7 +53,15 @@ namespace gui {
     };
 
     enum class UIAction {
-        CLICK, DOUBLE_CLICK, FOCUS, DEFOCUS, RIGHT_CLICK
+        CLICK,
+        DOUBLE_CLICK,
+        FOCUS,
+        DEFOCUS,
+        RIGHT_CLICK,
+        MOUSE_OVER,
+        MOUSE_OUT,
+        MOUSE_ENTER,
+        MOUSE_LEAVE,
     };
 
     using ActionsSet = TaggedCallbacksSet<UIAction, GUI&>;
@@ -183,11 +169,14 @@ namespace gui {
         virtual void setAlign(Align align);
         Align getAlign() const;
 
-        virtual void setHover(bool flag);
+        virtual void setMouseEnter(bool flag);
         bool isHover() const;
+
+        void setMouseOver(bool flag);
 
         virtual void setParent(UINode* node);
         UINode* getParent() const;
+        std::shared_ptr<UINode> getParentShared() const;
 
         /// @brief Set element color (doesn't affect inner elements).
         /// Also replaces hover color to avoid adding extra properties
@@ -213,11 +202,7 @@ namespace gui {
         /// @brief Get element z-index
         int getZIndex() const;
 
-        virtual void listenClick(OnAction action);
-        virtual void listenRightClick(OnAction action);
-        virtual void listenDoubleClick(OnAction action);
-        virtual void listenFocus(OnAction action);
-        virtual void listenDefocus(OnAction action);
+        void listenAction(UIAction type, OnAction action);
 
         virtual void defocus();
         virtual void onFocus();
@@ -309,7 +294,7 @@ namespace gui {
         /// @brief collect all nodes having id
         static void getIndices(
             const std::shared_ptr<UINode>& node,
-            std::unordered_map<std::string, std::shared_ptr<UINode>>& map
+            std::unordered_map<std::string, std::weak_ptr<UINode>>& map
         );
 
         static std::shared_ptr<UINode> find(

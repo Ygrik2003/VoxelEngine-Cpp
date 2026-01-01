@@ -23,6 +23,7 @@ namespace {
     std::unordered_map<speakerid_t, std::shared_ptr<Stream>> streams;
     std::vector<std::unique_ptr<Channel>> channels;
     util::ObjectsKeeper objects_keeper {};
+    std::unique_ptr<InputDevice> input_device = nullptr;
 }
 
 Channel::Channel(std::string name) : name(std::move(name)) {
@@ -151,8 +152,6 @@ public:
     }
 };
 
-static std::unique_ptr<InputDevice> input_device = nullptr;
-
 void audio::initialize(bool enabled, AudioSettings& settings) {
     enabled = enabled && settings.enabled.get();
     if (enabled) {
@@ -183,9 +182,9 @@ void audio::initialize(bool enabled, AudioSettings& settings) {
         }, true));
     }
 
-    input_device = backend->openInputDevice("", 44100, 1, 16);
-    if (input_device) {
-        input_device->startCapture();
+    ::input_device = backend->openInputDevice("", 44100, 1, 16);
+    if (::input_device) {
+        ::input_device->startCapture();
     }
 }
 
@@ -270,18 +269,26 @@ std::vector<std::string> audio::get_output_devices_names() {
 }
 
 void audio::set_input_device(const std::string& deviceName) {
+    logger.info() << "setting input device to " << deviceName;
+    if (deviceName == audio::DEVICE_NONE) {
+        if (::input_device) {
+            ::input_device->stopCapture();
+        }
+        ::input_device = nullptr;
+        return;
+    }
     auto newDevice = backend->openInputDevice(deviceName, 44100, 1, 16);
     if (newDevice == nullptr) {
         logger.error() << "could not open input device: " << deviceName;
         return;
     }
 
-    if (input_device) {
-        input_device->stopCapture();
+    if (::input_device) {
+        ::input_device->stopCapture();
     }
-    input_device = std::move(newDevice);
-    if (input_device) {
-        input_device->startCapture();
+    ::input_device = std::move(newDevice);
+    if (::input_device) {
+        ::input_device->startCapture();
     }
 }
 

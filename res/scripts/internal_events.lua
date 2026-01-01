@@ -9,10 +9,12 @@ block.__perform_ticks = function(delta)
     for id, entry in pairs(updating_blocks) do
         entry.timer = entry.timer + delta
         local steps = math.floor(entry.timer / entry.delta * #entry / 3)
+        steps = math.min(steps, #entry / 3)
         if steps == 0 then
             goto continue
         end
         entry.timer = 0.0
+        entry.pointer = entry.pointer % #entry
         local event = entry.event
         local tps = entry.tps
         for i=1, steps do
@@ -27,6 +29,7 @@ block.__perform_ticks = function(delta)
     for id, queue in pairs(present_queues) do
         queue.timer = queue.timer + delta
         local steps = math.floor(queue.timer / queue.delta * #queue / 3)
+        steps = math.min(steps, #queue / 3)
         if steps == 0 then
             goto continue
         end

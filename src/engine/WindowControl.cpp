@@ -36,9 +36,17 @@ WindowControl::Result WindowControl::initialize() {
     if (!title.empty()) {
         title += " - ";
     }
-    title += "VoxelCore v" +
-                    std::to_string(ENGINE_VERSION_MAJOR) + "." +
-                    std::to_string(ENGINE_VERSION_MINOR);
+    std::string buildName;
+#ifdef VC_BUILD_NAME
+    buildName = VC_BUILD_NAME;
+#endif
+    title += "VoxelCore v";
+    if (buildName.empty()) {
+        title += std::to_string(ENGINE_VERSION_MAJOR) + "." +
+                 std::to_string(ENGINE_VERSION_MINOR);
+    } else {
+        title += buildName;
+    }
     if (ENGINE_DEBUG_BUILD) {
         title += " [debug]";
     }

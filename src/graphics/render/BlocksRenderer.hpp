@@ -32,13 +32,12 @@ class BlocksRenderer {
     size_t indexCount;
     size_t denseIndexCount;
     size_t capacity;
-    int voxelBufferPadding = 2;
     bool overflow = false;
     bool cancelled = false;
     bool densePass = false;
     bool denseRender = false;
     const Chunk* chunk = nullptr;
-    std::unique_ptr<VoxelsVolume> voxelsBuffer;
+    const VoxelsVolume* voxelsBuffer = nullptr;
 
     const Block* const* blockDefsCache;
     const ContentGfxCache& cache;
@@ -152,9 +151,13 @@ class BlocksRenderer {
 
     glm::vec4 pickLight(int x, int y, int z) const;
     glm::vec4 pickLight(const glm::ivec3& coord) const;
-    glm::vec4 pickSoftLight(const glm::ivec3& coord, const glm::ivec3& right, const glm::ivec3& up) const;
-    glm::vec4 pickSoftLight(float x, float y, float z, const glm::ivec3& right, const glm::ivec3& up) const;
-    
+    glm::vec4 pickSoftLight(
+        const glm::ivec3& coord, const glm::ivec3& right, const glm::ivec3& up
+    ) const;
+    glm::vec4 pickSoftLight(
+        float x, float y, float z, const glm::ivec3& right, const glm::ivec3& up
+    ) const;
+
     void render(const voxel* voxels, const int beginEnds[256][2]);
     SortingMeshData renderTranslucent(const voxel* voxels, int beginEnds[256][2]);
 public:
@@ -166,10 +169,11 @@ public:
     );
     virtual ~BlocksRenderer();
 
-    void build(const Chunk* chunk, const Chunks* chunks);
-    ChunkMesh render(const Chunk* chunk, const Chunks* chunks);
+    void build(const Chunk* chunk, const VoxelsVolume& volume);
+    ChunkMesh render(
+        const Chunk* chunk, const VoxelsVolume& volume
+    );
     ChunkMeshData createMesh();
-    VoxelsVolume* getVoxelsBuffer() const;
 
     size_t getMemoryConsumption() const;
 

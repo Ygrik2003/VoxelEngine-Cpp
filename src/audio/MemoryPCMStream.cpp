@@ -24,11 +24,8 @@ void MemoryPCMStream::close() {
 }
 
 size_t MemoryPCMStream::read(char* dst, size_t bufferSize) {
-    if (!open) {
+    if (!open || buffer.empty()) {
         return PCMStream::ERROR;
-    }
-    if (buffer.empty()) {
-        return 0;
     }
     size_t count = std::min<size_t>(bufferSize, buffer.size());
     std::memcpy(dst, buffer.data(), count);

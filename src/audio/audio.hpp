@@ -26,6 +26,8 @@ namespace audio {
 
     constexpr inline size_t MAX_INPUT_SAMPLES = 22050;
 
+    inline std::string_view DEVICE_NONE = "none";
+
     class Speaker;
 
     /// @brief Audio speaker states

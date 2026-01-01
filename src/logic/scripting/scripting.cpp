@@ -253,9 +253,9 @@ void scripting::process_post_runnables() {
     }
 }
 
-template <class T>
+template <class T, typename IdType>
 static int push_properties_tables(
-    lua::State* L, const ContentUnitIndices<T>& indices
+    lua::State* L, const ContentUnitIndices<T, IdType>& indices
 ) {
     const auto units = indices.getDefs();
     size_t size = indices.count();
@@ -708,12 +708,15 @@ void scripting::load_content_script(
 }
 
 void scripting::load_entity_component(
-    const std::string& name, const io::path& file, const std::string& fileName
+    const scriptenv& env,
+    const std::string& name,
+    const io::path& file,
+    const std::string& fileName
 ) {
     auto L = lua::get_main_state();
     std::string src = io::read_string(file);
     logger.info() << "script (component) " << file.string();
-    lua::loadbuffer(L, 0, src, fileName);
+    lua::loadbuffer(L, *env, src, fileName);
     lua::store_in(L, lua::CHUNKS_TABLE, name);
 }
 

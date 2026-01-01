@@ -130,11 +130,11 @@ static int l_get_chunk_data(lua::State* L) {
     int z = static_cast<int>(lua::tointeger(L, 2));
     const auto& chunk = level->chunks->getChunk(x, z);
 
+    auto voxelData = std::make_unique<ubyte[]>(CHUNK_DATA_LEN);
     std::vector<ubyte> chunkData;
     if (chunk == nullptr) {
         auto& regions = level->getWorld()->wfile->getRegions();
-        auto voxelData = regions.getVoxels(x, z);
-        if (voxelData == nullptr) {
+        if (!regions.getVoxels(x, z, voxelData.get())) {
             return 0;
         }
         static util::Buffer<ubyte> rleBuffer(CHUNK_DATA_LEN * 2);
@@ -153,8 +153,10 @@ static void integrate_chunk_client(Chunk& chunk) {
 
     chunk.flags.loadedLights = false;
     chunk.flags.lighted = false;
-    chunk.lightmap.clear();
-    Lighting::prebuildSkyLight(chunk, *indices);
+    if (chunk.lightmap) {
+        chunk.lightmap->clear();
+        Lighting::prebuildSkyLight(chunk, *indices);
+    }
 
     for (int lz = -1; lz <= 1; lz++) {
         for (int lx = -1; lx <= 1; lx++) {

@@ -5,6 +5,7 @@
 #include "BlocksController.hpp"
 #include "ChunksController.hpp"
 #include "util/Clock.hpp"
+#include "util/CallbacksSet.hpp"
 
 class Engine;
 class Level;
@@ -20,8 +21,9 @@ class LevelController {
     std::unique_ptr<ChunksController> chunks;
 
     util::Clock playerTickClock;
-    Player* localPlayer;
 public:
+    CallbacksSet<> preQuitCallbacks;
+
     LevelController(Engine* engine, std::unique_ptr<Level> level, Player* clientPlayer);
 
     /// @param delta time elapsed since the last update

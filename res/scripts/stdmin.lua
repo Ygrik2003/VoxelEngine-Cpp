@@ -45,7 +45,8 @@ local canvas_ffi_buffer_size = 0
 local _ffi = ffi
 function __vc_Canvas_set_data(self, data)
     if type(data) == "cdata" then
-        self:_set_data(tostring(_ffi.cast("uintptr_t", data)))
+        self:_set_data(tostring(_ffi.cast("uintptr_t", data.bytes)), data.size)
+        return
     end
     local width = self.width
     local height = self.height
@@ -60,7 +61,7 @@ function __vc_Canvas_set_data(self, data)
     for i=0, size - 1 do
         canvas_ffi_buffer[i] = data[i + 1]
     end
-    self:_set_data(tostring(_ffi.cast("uintptr_t", canvas_ffi_buffer)))
+    self:_set_data(tostring(_ffi.cast("uintptr_t", canvas_ffi_buffer)), size)
 end
 
 local ipairs_mt_supported = false

@@ -186,10 +186,12 @@ namespace scripting {
     );
 
     /// @brief Load component script
+    /// @param env environment
     /// @param name component full name (packid:name)
     /// @param file component script file path
     /// @param fileName script file path using the engine format
     void load_entity_component(
+        const scriptenv& env,
         const std::string& name,
         const io::path& file,
         const std::string& fileName

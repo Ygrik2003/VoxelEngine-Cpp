@@ -27,8 +27,7 @@ LevelController::LevelController(
     : settings(engine->getSettings()),
       level(std::move(levelPtr)),
       chunks(std::make_unique<ChunksController>(*level)),
-      playerTickClock(20, 3),
-      localPlayer(clientPlayer) {
+      playerTickClock(20, 3) {
     
     level->events->listen(LevelEventType::CHUNK_PRESENT, [](auto, Chunk* chunk) {
         scripting::on_chunk_present(*chunk, chunk->flags.loaded);
@@ -123,6 +122,7 @@ void LevelController::update(float delta, bool pause) {
 }
 
 void LevelController::processBeforeQuit() {
+    preQuitCallbacks.notify();
     // todo: move somewhere else
     for (auto player : level->players->getAll()) {
         if (player->chunks) {

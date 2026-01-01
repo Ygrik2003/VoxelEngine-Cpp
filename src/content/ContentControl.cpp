@@ -12,7 +12,7 @@
 #include "logic/scripting/scripting.hpp"
 #include "core_defs.hpp"
 
-static void load_configs(Input& input, const io::path& root) {
+static void load_configs(Input* input, const io::path& root) {
     auto configFolder = root / "config";
 }
 
@@ -26,7 +26,7 @@ static std::vector<io::path> default_content_sources {
 ContentControl::ContentControl(
     const Project& project,
     EnginePaths& paths,
-    Input& input,
+    Input* input,
     std::function<void()> postContent
 )
     : paths(paths),

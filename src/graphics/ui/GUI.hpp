@@ -2,6 +2,7 @@
 
 #include "delegates.hpp"
 
+#include <set>
 #include <queue>
 #include <memory>
 #include <vector>
@@ -17,6 +18,7 @@ struct CursorState;
 class Engine;
 class Input;
 class Window;
+struct FontStylesScheme;
 
 namespace devtools {
     class Editor;
@@ -73,11 +75,13 @@ namespace gui {
         std::shared_ptr<UINode> focus;
         std::shared_ptr<UINode> tooltip;
         std::shared_ptr<UiDocument> rootDocument;
+        std::unique_ptr<FontStylesScheme> syntaxColorScheme;
         std::unordered_map<std::string, std::shared_ptr<UINode>> storage;
 
         std::unique_ptr<Camera> uicamera;
         std::shared_ptr<Menu> menu;
         std::queue<runnable> postRunnables;
+        std::vector<std::weak_ptr<UINode>> mouseOver;
 
         PageLoaderFunc pagesLoader;
 
@@ -156,6 +160,9 @@ namespace gui {
         /// @brief Get the main container
         /// @deprecated
         std::shared_ptr<Container> getContainer() const;
+
+        void setSyntaxColorScheme(std::unique_ptr<FontStylesScheme> scheme);
+        FontStylesScheme* getSyntaxColorScheme() const;
 
         void onAssetsLoad(Assets* assets);
 

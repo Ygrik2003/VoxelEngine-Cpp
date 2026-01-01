@@ -22,6 +22,6 @@ void gui::Canvas::draw(const DrawContext& pctx, const Assets& assets) {
 
 void gui::Canvas::setSize(const glm::vec2& size) {
     UINode::setSize(size);
-    data->extend(size.x, size.y);
+    data->extend(std::max<int>(1, size.x), std::max<int>(1, size.y));
     texture->reload(*data);
 }
