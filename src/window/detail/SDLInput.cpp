@@ -135,8 +135,14 @@ void SDLInput::pollEvents(bool waitForRefresh) {
     uint size {};
 
     bool prevPressed = false;
-
     static SDL_Event event;
+
+    logger.info() << waitForRefresh;
+
+    if (waitForRefresh) {
+        SDL_WaitEvent(NULL);
+    }
+
     while (SDL_PollEvent(&event)) {
         switch (event.type) {
             case SDL_EVENT_QUIT:

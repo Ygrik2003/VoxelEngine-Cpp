@@ -1,14 +1,14 @@
 #include "WindowControl.hpp"
 
 #include "Engine.hpp"
-#include "engine/EnginePaths.hpp"
-#include "devtools/Project.hpp"
 #include "coders/imageio.hpp"
-#include "window/Window.hpp"
-#include "window/input.hpp"
 #include "debug/Logger.hpp"
+#include "devtools/Project.hpp"
+#include "engine/EnginePaths.hpp"
 #include "graphics/core/ImageData.hpp"
 #include "util/platform.hpp"
+#include "window/Window.hpp"
+#include "window/input.hpp"
 
 static debug::Logger logger("window-control");
 
@@ -26,7 +26,8 @@ namespace {
     }
 }
 
-WindowControl::WindowControl(Engine& engine) : engine(engine) {}
+WindowControl::WindowControl(Engine& engine) : engine(engine) {
+}
 
 WindowControl::Result WindowControl::initialize() {
     const auto& project = engine.getProject();
@@ -55,7 +56,7 @@ WindowControl::Result WindowControl::initialize() {
     }
 
     auto [window, input] = Window::initialize(&settings.display, title);
-    if (!window || !input){
+    if (!window || !input) {
         throw initialize_error("could not initialize window");
     }
     window->setFramerate(settings.display.framerate.get());
@@ -93,6 +94,7 @@ void WindowControl::nextFrame(bool waitForRefresh) {
     auto& window = engine.getWindow();
     auto& input = engine.getInput();
     window.setFramerate(
+        // Maybe also check focus?
         window.isIconified() && settings.display.limitFpsIconified.get()
             ? 20
             : settings.display.framerate.get()
