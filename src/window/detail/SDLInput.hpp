@@ -13,7 +13,7 @@ public:
 
     SDLInput(SDLWindow& window);
 
-    void pollEvents() override;
+    void pollEvents(bool waitForRefresh) override;
 
     const char* getClipboardText() const override;
     void setClipboardText(const char* str) override;

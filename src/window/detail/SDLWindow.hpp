@@ -7,12 +7,12 @@
 
 class SDLWindow final : public Window {
 public:
-    SDLWindow(DisplaySettings *settings, std::string title) noexcept;
+    SDLWindow(DisplaySettings* settings, std::string title) noexcept;
     ~SDLWindow();
-    SDLWindow(const SDLWindow &) = delete;
-    SDLWindow(SDLWindow &&) = default;
-    SDLWindow &operator=(const SDLWindow &) = delete;
-    SDLWindow &operator=(SDLWindow &&) = default;
+    SDLWindow(const SDLWindow&) = delete;
+    SDLWindow(SDLWindow&&) = default;
+    SDLWindow& operator=(const SDLWindow&) = delete;
+    SDLWindow& operator=(SDLWindow&&) = default;
 
     void swapBuffers() noexcept override;
 
@@ -27,11 +27,17 @@ public:
     void setMode(WindowMode mode) override;
     WindowMode getMode() const override;
 
-    void setIcon(const ImageData *image) override;
+    void focus() override;
+
+    void setTitle(const std::string& title) override;
+    void setIcon(const ImageData* image) override;
 
     void pushScissor(glm::vec4 area) override;
     void popScissor() override;
     void resetScissor() override;
+
+    void setShouldRefresh() override;
+    bool checkShouldRefresh() override;
 
     double time() override;
 
@@ -41,18 +47,19 @@ public:
     std::unique_ptr<ImageData> takeScreenshot() override;
 
     [[nodiscard]] bool isValid() const override;
-    [[nodiscard]] SDL_Window *getSdlWindow() const;
+    [[nodiscard]] SDL_Window* getSdlWindow() const;
 private:
     bool isSuccessfull = true;
     bool toClose = false;
     bool fullscreen = false;
+    bool shouldRefresh = true;
 
     double framerate = -1;
     double prevSwap = 0.0;
 
-    SDL_Window *window = nullptr;
-    SDL_Renderer *renderer = nullptr;
-    SDL_Cursor *cursor = nullptr;
+    SDL_Window* window = nullptr;
+    SDL_Renderer* renderer = nullptr;
+    SDL_Cursor* cursor = nullptr;
     SDL_GLContext context = nullptr;
 
     std::stack<glm::vec4> scissorStack;

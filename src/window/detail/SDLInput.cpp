@@ -123,7 +123,7 @@ SDLInput::SDLInput(SDLWindow& window) : window(window) {
     input_util::initialize();
 }
 
-void SDLInput::pollEvents() {
+void SDLInput::pollEvents(bool waitForRefresh) {
     delta.x = 0.0f;
     delta.y = 0.0f;
     scroll = 0;

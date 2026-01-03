@@ -30,15 +30,15 @@ static void init_gl_extensions_list() {
     glGetIntegerv(GL_NUM_EXTENSIONS, &numExtensions);
 
     for (GLint i = 0; i < numExtensions; ++i) {
-        const char *ext =
-            reinterpret_cast<const char *>(glGetStringi(GL_EXTENSIONS, i));
+        const char* ext =
+            reinterpret_cast<const char*>(glGetStringi(GL_EXTENSIONS, i));
         if (ext) {
             supported_gl_extensions.insert(ext);
         }
     }
 }
 
-static bool is_gl_extension_supported(const char *extension) {
+static bool is_gl_extension_supported(const char* extension) {
     if (!extension || !*extension) {
         return false;
     }
@@ -46,7 +46,7 @@ static bool is_gl_extension_supported(const char *extension) {
            supported_gl_extensions.end();
 }
 
-static const char *gl_error_name(int error) {
+static const char* gl_error_name(int error) {
     switch (error) {
         case GL_DEBUG_TYPE_ERROR:
             return "ERROR";
@@ -64,7 +64,7 @@ static const char *gl_error_name(int error) {
     return "UNKNOWN";
 }
 
-static const char *gl_severity_name(int severity) {
+static const char* gl_severity_name(int severity) {
     switch (severity) {
         case GL_DEBUG_SEVERITY_LOW:
             return "LOW";
@@ -84,8 +84,8 @@ static void GLAPIENTRY gl_message_callback(
     GLuint id,
     GLenum severity,
     GLsizei length,
-    const GLchar *message,
-    const void *userParam
+    const GLchar* message,
+    const void* userParam
 ) {
     if (severity == GL_DEBUG_SEVERITY_NOTIFICATION) {
         return;
@@ -134,16 +134,16 @@ static bool initialize_gl(int width, int height) {
         logger.info() << "max texture size is " << Texture::MAX_RESOLUTION;
     }
 
-    const GLubyte *vendor = glGetString(GL_VENDOR);
-    const GLubyte *renderer = glGetString(GL_RENDERER);
-    logger.info() << "GL Vendor: " << reinterpret_cast<const char *>(vendor);
-    logger.info() << "GL Renderer: "
-                  << reinterpret_cast<const char *>(renderer);
+    const GLubyte* vendor = glGetString(GL_VENDOR);
+    const GLubyte* renderer = glGetString(GL_RENDERER);
+    logger.info() << "GL Vendor: " << reinterpret_cast<const char*>(vendor);
+    logger.info() << "GL Renderer: " << reinterpret_cast<const char*>(renderer);
     logger.info() << "SDL: " << SDL_GetVersion();
     return true;
 }
 
-SDLWindow::SDLWindow(DisplaySettings *settings, std::string title) noexcept {
+SDLWindow::SDLWindow(DisplaySettings* settings, std::string title) noexcept
+    : Window({settings->width.get(), settings->height.get()}) {
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) {
         logger.error() << "failed to initialize SDL: " << SDL_GetError();
         isSuccessfull = false;
@@ -347,13 +347,21 @@ WindowMode SDLWindow::getMode() const {
     return mode;
 }
 
-void SDLWindow::setIcon(const ImageData *image) {
+void SDLWindow::focus() {
+    SDL_SetWindowFocusable(window, true);
+}
+
+void SDLWindow::setTitle(const std::string& title) {
+    SDL_SetWindowTitle(window, title.c_str());
+}
+
+void SDLWindow::setIcon(const ImageData* image) {
     if (image == nullptr) {
         logger.error() << "Image is nullptr";
         return;
     }
 
-    SDL_Surface *iconSurface = SDL_CreateSurface(
+    SDL_Surface* iconSurface = SDL_CreateSurface(
         image->getWidth(), image->getHeight(), SDL_PIXELFORMAT_RGBA32
     );
 
@@ -433,6 +441,17 @@ void SDLWindow::popScissor() {
     scissorArea = area;
 }
 
+void SDLWindow::setShouldRefresh() {
+    shouldRefresh = true;
+}
+bool SDLWindow::checkShouldRefresh() {
+    if (shouldRefresh) {
+        shouldRefresh = false;
+        return true;
+    }
+    return false;
+}
+
 double SDLWindow::time() {
     return static_cast<double>(SDL_GetTicksNS()) / 1'000'000'000;
 }
@@ -459,12 +478,12 @@ std::unique_ptr<ImageData> SDLWindow::takeScreenshot() {
 [[nodiscard]] bool SDLWindow::isValid() const {
     return isSuccessfull;
 }
-[[nodiscard]] SDL_Window *SDLWindow::getSdlWindow() const {
+[[nodiscard]] SDL_Window* SDLWindow::getSdlWindow() const {
     return window;
 }
 
 std::tuple<std::unique_ptr<Window>, std::unique_ptr<Input>> Window::initialize(
-    DisplaySettings *settings, std::string title
+    DisplaySettings* settings, std::string title
 ) {
     auto window = std::make_unique<SDLWindow>(settings, title);
     if (!window->isValid()) {
